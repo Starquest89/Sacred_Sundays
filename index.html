@@ -8,6 +8,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
         table, th, td {
             border: 1px solid black;
@@ -20,33 +21,37 @@
 </head>
 <body>
     <h1>Google Sheet Data</h1>
-    <table id="data-table">
-        <thead>
-            <tr>
-                <!-- Headers will be inserted here -->
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Data will be inserted here -->
-        </tbody>
-    </table>
+
+    <div id="sheets-container">
+        <!-- Tables will be inserted here -->
+    </div>
 
     <script>
-        async function fetchData() {
-            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvIX4t49JfpgTadwSNeHNicc0LJUymynGUHwJXn_w1VL0WWzEO9Wi-t7sKYwbvba1JmZV79_FUDLkY/pub?output=csv';
+        const sheetUrls = [
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
+        ];
+
+        async function fetchData(url, sheetIndex) {
             const response = await fetch(url);
             const data = await response.text();
             const rows = data.split('\n').map(row => row.split(','));
 
-            const tableHead = document.querySelector('#data-table thead tr');
-            const tableBody = document.querySelector('#data-table tbody');
+            const sheetContainer = document.createElement('div');
+            const table = document.createElement('table');
+            const tableHead = document.createElement('thead');
+            const tableBody = document.createElement('tbody');
+            const tableHeaderRow = document.createElement('tr');
 
             // Add headers
             rows[0].forEach(header => {
                 const th = document.createElement('th');
                 th.textContent = header;
-                tableHead.appendChild(th);
+                tableHeaderRow.appendChild(th);
             });
+            tableHead.appendChild(tableHeaderRow);
+            table.appendChild(tableHead);
 
             // Add data rows
             rows.slice(1).forEach(row => {
@@ -58,9 +63,17 @@
                 });
                 tableBody.appendChild(tr);
             });
+            table.appendChild(tableBody);
+            sheetContainer.appendChild(table);
+
+            const container = document.getElementById('sheets-container');
+            const title = document.createElement('h2');
+            title.textContent = `Sheet ${sheetIndex + 1}`;
+            container.appendChild(title);
+            container.appendChild(sheetContainer);
         }
 
-        fetchData();
+        sheetUrls.forEach((url, index) => fetchData(url, index));
     </script>
 </body>
 </html>
