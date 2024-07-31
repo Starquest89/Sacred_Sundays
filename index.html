@@ -68,10 +68,14 @@
             'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
         ];
 
+        function cleanData(data) {
+            return data.replace(/(^"|"$)/g, '').replace(/""/g, '"');
+        }
+
         async function fetchData(url, sheetIndex) {
             const response = await fetch(url);
             const data = await response.text();
-            const rows = data.split('\n').map(row => row.split(','));
+            const rows = data.split('\n').map(row => row.split(',').map(cell => cleanData(cell)));
 
             const sheetContainer = document.createElement('div');
             const table = document.createElement('table');
