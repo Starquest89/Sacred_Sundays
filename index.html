@@ -28,43 +28,34 @@
             max-width: 1000px;
             border-collapse: collapse;
             margin-bottom: 40px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
         table, th, td {
-            border: 1px solid #ddd;
+            border: 1px solid #000; /* Black borders */
         }
         th, td {
-            padding: 12px;
+            padding: 10px;
             text-align: left;
+            font-weight: bold; /* Make text bold */
         }
         th {
-            background-color: #3498db; /* Blue */
-            color: #fff;
-            font-weight: bold;
+            background-color: #003366; /* Dark blue */
+            color: #ffffff; /* White text */
         }
         tr:nth-child(even) {
-            background-color: #f2f2f2;
+            background-color: #e6f2ff; /* Light blue */
         }
         tr:nth-child(odd) {
-            background-color: #ffffff;
+            background-color: #ffffff; /* White */
         }
         tr:hover {
-            background-color: #e1e1e1;
+            background-color: #cce5ff; /* Light blue on hover */
         }
         h2 {
             text-align: center;
-            color: #555;
+            color: #003366; /* Dark blue */
             margin-top: 10px;
-        }
-        .sheet1 h2 {
-            color: #e74c3c; /* Red */
-        }
-        .sheet2 h2 {
-            color: #2ecc71; /* Green */
-        }
-        .sheet3 h2 {
-            color: #f39c12; /* Orange */
         }
     </style>
 </head>
@@ -121,8 +112,7 @@
 
             const container = document.getElementById('sheets-container');
             const title = document.createElement('h2');
-            title.textContent = sheetIndex === 0 ? 'SS Weekly Scores' : `Sheet ${sheetIndex + 1}`;
-            title.classList.add(`sheet${sheetIndex + 1}`);
+            title.textContent = sheetIndex === 0 ? 'SS 2024 Standings' : `Sheet ${sheetIndex + 1}`;
             container.appendChild(title);
             container.appendChild(sheetContainer);
         }
