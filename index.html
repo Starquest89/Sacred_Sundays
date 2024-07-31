@@ -1,4 +1,72 @@
-<script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheet Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+            color: #444;
+        }
+        #sheets-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        table {
+            width: 90%;
+            max-width: 1000px;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+            background-color: #ffffff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        table, th, td {
+            border: 1px solid #000; /* Black borders */
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            font-weight: bold; /* Make text bold */
+        }
+        th {
+            background-color: #003366; /* Dark blue */
+            color: #ffffff; /* White text */
+        }
+        tr:nth-child(even) {
+            background-color: #e6f2ff; /* Light blue */
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff; /* White */
+        }
+        tr:hover {
+            background-color: #cce5ff; /* Light blue on hover */
+        }
+        h2 {
+            text-align: center;
+            color: #003366; /* Dark blue */
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Sheet Data</h1>
+
+    <div id="sheets-container">
+        <!-- Tables will be inserted here -->
+    </div>
+
+    <script>
     const sheetUrls = [
         'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
         'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
@@ -67,4 +135,5 @@
 
     sheetUrls.forEach((url, index) => fetchData(url, index));
 </script>
-
+</body>
+</html>
