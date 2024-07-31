@@ -39,18 +39,32 @@
             text-align: left;
         }
         th {
-            background-color: #f2f2f2;
-            color: #333;
+            background-color: #3498db; /* Blue */
+            color: #fff;
+            font-weight: bold;
         }
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
         }
         tr:hover {
-            background-color: #f1f1f1;
+            background-color: #e1e1e1;
         }
         h2 {
             text-align: center;
             color: #555;
+            margin-top: 10px;
+        }
+        .sheet1 h2 {
+            color: #e74c3c; /* Red */
+        }
+        .sheet2 h2 {
+            color: #2ecc71; /* Green */
+        }
+        .sheet3 h2 {
+            color: #f39c12; /* Orange */
         }
     </style>
 </head>
@@ -107,7 +121,8 @@
 
             const container = document.getElementById('sheets-container');
             const title = document.createElement('h2');
-            title.textContent = `Sheet ${sheetIndex + 1}`;
+            title.textContent = sheetIndex === 0 ? 'SS Weekly Scores' : `Sheet ${sheetIndex + 1}`;
+            title.classList.add(`sheet${sheetIndex + 1}`);
             container.appendChild(title);
             container.appendChild(sheetContainer);
         }
