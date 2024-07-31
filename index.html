@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheet Data</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>Google Sheet Data</h1>
+    <table id="data-table">
+        <thead>
+            <tr>
+                <!-- Headers will be inserted here -->
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be inserted here -->
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchData() {
+            const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQvIX4t49JfpgTadwSNeHNicc0LJUymynGUHwJXn_w1VL0WWzEO9Wi-t7sKYwbvba1JmZV79_FUDLkY/pub?output=csv';
+            const response = await fetch(url);
+            const data = await response.text();
+            const rows = data.split('\n').map(row => row.split(','));
+
+            const tableHead = document.querySelector('#data-table thead tr');
+            const tableBody = document.querySelector('#data-table tbody');
+
+            // Add headers
+            rows[0].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                tableHead.appendChild(th);
+            });
+
+            // Add data rows
+            rows.slice(1).forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+        }
+
+        fetchData();
+    </script>
+</body>
+</html>
