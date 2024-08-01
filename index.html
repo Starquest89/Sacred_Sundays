@@ -62,9 +62,12 @@
         }
         .double-line-border {
         border-bottom: double 3px #333; /* Example styling for a double line */
-    
         }
-    </style>
+    .double-line-vertical {
+        border-right: double 3px #333; /* Example styling for a double vertical line */
+    }
+</style>
+
 </head>
 <body>
     <h1>Google Sheet Data</h1>
@@ -73,7 +76,7 @@
         <!-- Tables will be inserted here -->
     </div>
 
-    <script>
+   <script>
     const sheetUrls = [
         'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
         'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
@@ -96,10 +99,6 @@
         const data = await response.text();
         let rows = parseCSV(data);
 
-        if (index === 1) {  // Limit columns for the second sheet
-            rows = rows.map(row => row.slice(0, 15));
-        }
-
         return { rows, index };
     }
 
@@ -109,36 +108,35 @@
         const tableHead = document.createElement('thead');
         const tableBody = document.createElement('tbody');
         const tableHeaderRow = document.createElement('tr');
+        
+        let week14Index = -1; // To hold the index of "Week 14" column
 
-        // Add headers
-        rows[0].forEach(header => {
+        // Add headers and find "Week 14" index
+        rows[0].forEach((header, idx) => {
             const th = document.createElement('th');
             th.textContent = header;
+            if (header === "Week 14") {
+                week14Index = idx; // Set index of "Week 14"
+                th.classList.add('double-line-vertical');
+            }
             tableHeaderRow.appendChild(th);
         });
         tableHead.appendChild(tableHeaderRow);
         table.appendChild(tableHead);
 
         // Add data rows
-        let doubleLineIndex = -1;
-        rows.slice(1).forEach((row, rowIndex) => {
+        rows.slice(1).forEach(row => {
             const tr = document.createElement('tr');
-            row.forEach(cell => {
+            row.forEach((cell, idx) => {
                 const td = document.createElement('td');
                 td.textContent = cell;
+                if (idx === week14Index) {
+                    td.classList.add('double-line-vertical');
+                }
                 tr.appendChild(td);
             });
-            if (row.includes("Fighting Irish")) {
-                doubleLineIndex = rowIndex +0; // Mark the next row for a double line
-            }
             tableBody.appendChild(tr);
         });
-
-        // Apply double line border if applicable
-        if (doubleLineIndex >= 0 && tableBody.children[doubleLineIndex]) {
-            tableBody.children[doubleLineIndex].classList.add('double-line-border');
-        }
-
         table.appendChild(tableBody);
         sheetContainer.appendChild(table);
 
@@ -153,6 +151,7 @@
         data.forEach(updateDOM);
     });
 </script>
+
 
 </body>
 </html>
