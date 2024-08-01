@@ -74,25 +74,30 @@
     ];
 
     function cleanData(data) {
-        // Remove surrounding quotes and any double quotes inside the fields
         return data.replace(/^"|"$/g, '').replace(/""/g, '"');
     }
 
     function parseCSV(csv) {
         const rows = csv.split('\n');
         return rows.map(row => {
-            // Split each row into cells, taking care not to split inside quotes
             return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
         });
     }
 
-    async function fetchData(url) {
+    async function fetchData(url, index) {
         const response = await fetch(url);
         const data = await response.text();
-        return parseCSV(data);
+        let rows = parseCSV(data);
+
+        // Limit columns for the Weekly Winners sheet to only 15 columns
+        if (index === 1) { // Assuming sheetIndex 1 is the Weekly Winners sheet
+            rows = rows.map(row => row.slice(0, 15)); // Keep only the first 15 columns
+        }
+
+        return { rows, index };
     }
 
-    function updateDOM(data, index) {
+    function updateDOM({ rows, index }) {
         const sheetContainer = document.createElement('div');
         const table = document.createElement('table');
         const tableHead = document.createElement('thead');
@@ -100,7 +105,7 @@
         const tableHeaderRow = document.createElement('tr');
 
         // Add headers
-        data[0].forEach(header => {
+        rows[0].forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
             tableHeaderRow.appendChild(th);
@@ -109,7 +114,7 @@
         table.appendChild(tableHead);
 
         // Add data rows
-        data.slice(1).forEach(row => {
+        rows.slice(1).forEach(row => {
             const tr = document.createElement('tr');
             row.forEach(cell => {
                 const td = document.createElement('td');
@@ -128,10 +133,8 @@
         container.appendChild(sheetContainer);
     }
 
-    Promise.all(sheetUrls.map(url => fetchData(url))).then(data => {
-        data.forEach((sheetData, index) => {
-            updateDOM(sheetData, index);
-        });
+    Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
+        data.forEach(updateDOM);
     });
 </script>
 
