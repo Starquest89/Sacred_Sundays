@@ -74,84 +74,85 @@
     </div>
 
     <script>
-        const sheetUrls = [
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
-        ];
+    const sheetUrls = [
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
+    ];
 
-        function cleanData(data) {
-            return data.replace(/^"|"$/g, '').replace(/""/g, '"');
-        }
+    function cleanData(data) {
+        return data.replace(/^"|"$/g, '').replace(/""/g, '"');
+    }
 
-        function parseCSV(csv) {
-            const rows = csv.split('\n');
-            return rows.map(row => {
-                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
-            });
-        }
-
-        async function fetchData(url, index) {
-            const response = await fetch(url);
-            const data = await response.text();
-            let rows = parseCSV(data);
-
-            // Limit columns for the Weekly Winners sheet to only 15 columns
-            if (index === 1) {
-                rows = rows.map(row => row.slice(0, 15)); // Keep only the first 15 columns
-            }
-
-            return { rows, index };
-        }
-
-        function updateDOM({ rows, index }) {
-            const sheetContainer = document.createElement('div');
-            const table = document.createElement('table');
-            const tableHead = document.createElement('thead');
-            const tableBody = document.createElement('tbody');
-            const tableHeaderRow = document.createElement('tr');
-
-            // Right-align specific columns
-            const rightAlignColumns = ['Team', 'Score', 'Player'];
-
-            // Add headers
-            rows[0].forEach((header, idx) => {
-                const th = document.createElement('th');
-                th.textContent = header;
-                if (rightAlignColumns.includes(header)) {
-                    th.classList.add('right-align');
-                }
-                tableHeaderRow.appendChild(th);
-            });
-            tableHead.appendChild(tableHeaderRow);
-            table.appendChild(tableHead);
-
-            // Add data rows
-            rows.slice(1).forEach(row => {
-                const tr = document.createElement('tr');
-                row.forEach((cell, idx) => {
-                    const td = document.createElement('td');
-                    td.textContent = cell;
-                    if (rightAlignColumns.includes(rows[0][idx])) {
-                        td.classList.add('right-align');
-                    }
-                    tr.appendChild(td);
-                });
-                tableBody.appendChild(tr);
-            });
-            table.appendChild(tableBody);
-            sheetContainer.appendChild(table);
-
-            const container = document.getElementById('sheets-container');
-            const title = document.createElement('h2');
-            title.textContent = index === 0 ? 'SS 2024 Standings' : index === 1 ? 'Weekly Winners' : `Sheet ${index + 1}`;
-            container.appendChild(title);
-            container.appendChild(sheetContainer);
-        }
-
-        Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
-            data.forEach(updateDOM);
+    function parseCSV(csv) {
+        const rows = csv.split('\n');
+        return rows.map(row => {
+            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
         });
-    </script>
+    }
+
+    async function fetchData(url, index) {
+        const response = await fetch(url);
+        const data = await response.text();
+        let rows = parseCSV(data);
+
+        if (index === 1) {  // Limit columns for the second sheet
+            rows = rows.map(row => row.slice(0, 15));
+        }
+
+        return { rows, index };
+    }
+
+    function updateDOM({ rows, index }) {
+        const sheetContainer = document.createElement('div');
+        const table = document.createElement('table');
+        const tableHead = document.createElement('thead');
+        const tableBody = document.createElement('tbody');
+        const tableHeaderRow = document.createElement('tr');
+
+        // Add headers
+        rows[0].forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            tableHeaderRow.appendChild(th);
+        });
+        tableHead.appendChild(tableHeaderRow);
+        table.appendChild(tableHead);
+
+        // Add data rows
+        let doubleLineIndex = -1;
+        rows.slice(1).forEach((row, rowIndex) => {
+            const tr = document.createElement('tr');
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell;
+                tr.appendChild(td);
+            });
+            if (row.includes("Fighting Irish")) {
+                doubleLineIndex = rowIndex + 1; // Mark the next row for a double line
+            }
+            tableBody.appendChild(tr);
+        });
+
+        // Apply double line border if applicable
+        if (doubleLineIndex >= 0 && tableBody.children[doubleLineIndex]) {
+            tableBody.children[doubleLineIndex].classList.add('double-line-border');
+        }
+
+        table.appendChild(tableBody);
+        sheetContainer.appendChild(table);
+
+        const container = document.getElementById('sheets-container');
+        const title = document.createElement('h2');
+        title.textContent = index === 0 ? 'SS 2024 Standings' : index === 1 ? 'Weekly Winners' : `Sheet ${index + 1}`;
+        container.appendChild(title);
+        container.appendChild(sheetContainer);
+    }
+
+    Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
+        data.forEach(updateDOM);
+    });
+</script>
+
 </body>
 </html>
