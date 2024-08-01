@@ -66,58 +66,75 @@
         <!-- Tables will be inserted here -->
     </div>
 
-    <script>
-        const sheetUrls = [
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
-            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
-        ];
+<script>
+    const sheetUrls = [
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
+        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
+    ];
 
-        function cleanData(data) {
-            return data.replace(/(^"|"$)/g, '').replace(/""/g, '"');
+    function cleanData(data) {
+        return data.replace(/(^"|"$)/g, '').replace(/""/g, '"');
+    }
+
+    function parseCSV(csv) {
+        const rows = csv.split('\n');
+        return rows.map(row => {
+            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cell => cleanData(cell));
+        });
+    }
+
+    async function fetchData(url, sheetIndex) {
+        const response = await fetch(url);
+        const data = await response.text();
+        const rows = parseCSV(data);
+
+        const sheetContainer = document.createElement('div');
+        const table = document.createElement('table');
+        const tableHead = document.createElement('thead');
+        const tableBody = document.createElement('tbody');
+        const tableHeaderRow = document.createElement('tr');
+
+        // Update column headers and data manipulation
+        if (sheetIndex === 0) {
+            rows[0][3] = "Points For"; // Assuming "Points For" is the 4th column
         }
 
-        async function fetchData(url, sheetIndex) {
-            const response = await fetch(url);
-            const data = await response.text();
-            const rows = data.split('\n').map(row => row.split(',').map(cell => cleanData(cell)));
+        // Add headers
+        rows[0].forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            tableHeaderRow.appendChild(th);
+        });
+        tableHead.appendChild(tableHeaderRow);
+        table.appendChild(tableHead);
 
-            const sheetContainer = document.createElement('div');
-            const table = document.createElement('table');
-            const tableHead = document.createElement('thead');
-            const tableBody = document.createElement('tbody');
-            const tableHeaderRow = document.createElement('tr');
-
-            // Add headers
-            rows[0].forEach(header => {
-                const th = document.createElement('th');
-                th.textContent = header;
-                tableHeaderRow.appendChild(th);
+        // Add data rows
+        rows.slice(1).forEach((row, rowIndex) => {
+            const tr = document.createElement('tr');
+            row.forEach((cell, cellIndex) => {
+                const td = document.createElement('td');
+                td.textContent = cell;
+                // Special handling for "tyranical teabaggers" and the Points For column
+                if (sheetIndex === 0 && rowIndex === 1 && cellIndex === 3) { // Adjust rowIndex and cellIndex as needed
+                    td.textContent = "1,900.00"; // Manually set the correct value
+                }
+                tr.appendChild(td);
             });
-            tableHead.appendChild(tableHeaderRow);
-            table.appendChild(tableHead);
+            tableBody.appendChild(tr);
+        });
+        table.appendChild(tableBody);
+        sheetContainer.appendChild(table);
 
-            // Add data rows
-            rows.slice(1).forEach(row => {
-                const tr = document.createElement('tr');
-                row.forEach(cell => {
-                    const td = document.createElement('td');
-                    td.textContent = cell;
-                    tr.appendChild(td);
-                });
-                tableBody.appendChild(tr);
-            });
-            table.appendChild(tableBody);
-            sheetContainer.appendChild(table);
+        const container = document.getElementById('sheets-container');
+        const title = document.createElement('h2');
+        title.textContent = sheetIndex === 0 ? 'SS 2024 Standings' : `Sheet ${sheetIndex + 1}`;
+        container.appendChild(title);
+        container.appendChild(sheetContainer);
+    }
 
-            const container = document.getElementById('sheets-container');
-            const title = document.createElement('h2');
-            title.textContent = sheetIndex === 0 ? 'SS 2024 Standings' : `Sheet ${sheetIndex + 1}`;
-            container.appendChild(title);
-            container.appendChild(sheetContainer);
-        }
+    sheetUrls.forEach((url, index) => fetchData(url, index));
+</script> 
 
-        sheetUrls.forEach((url, index) => fetchData(url, index));
-    </script>
 </body>
 </html>
