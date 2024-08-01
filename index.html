@@ -63,7 +63,7 @@
         .double-line-border {
         border-bottom: double 3px #333; /* Example styling for a double line */
         }
-    .double-line-vertical {
+       .double-line-vertical {
         border-right: double 3px #333; /* Example styling for a double vertical line */
     }
 </style>
@@ -109,14 +109,14 @@
         const tableBody = document.createElement('tbody');
         const tableHeaderRow = document.createElement('tr');
         
-        let week14Index = -1; // To hold the index of "Week 14" column
+        let week14Index = -1; // To hold the index of "14" column
 
-        // Add headers and find "Week 14" index
+        // Add headers and find "14" index
         rows[0].forEach((header, idx) => {
             const th = document.createElement('th');
             th.textContent = header;
-            if (header === "Week 14") {
-                week14Index = idx; // Set index of "Week 14"
+            if (header === "14") {
+                week14Index = idx; // Set index of "14"
                 th.classList.add('double-line-vertical');
             }
             tableHeaderRow.appendChild(th);
