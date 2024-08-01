@@ -87,18 +87,17 @@
     async function fetchData(url, sheetIndex) {
         const response = await fetch(url);
         const data = await response.text();
-        const rows = parseCSV(data);
+        let rows = parseCSV(data);
+
+        if (sheetIndex === 1) { // Sheet 2 specific modifications
+            rows = rows.map(row => row.slice(0, 14)); // Keep only the first 14 columns
+        }
 
         const sheetContainer = document.createElement('div');
         const table = document.createElement('table');
         const tableHead = document.createElement('thead');
         const tableBody = document.createElement('tbody');
         const tableHeaderRow = document.createElement('tr');
-
-        // Update column headers and data manipulation
-        if (sheetIndex === 0) {
-            rows[0][3] = "Points For"; // Assuming "Points For" is the 4th column
-        }
 
         // Add headers
         rows[0].forEach(header => {
@@ -110,15 +109,11 @@
         table.appendChild(tableHead);
 
         // Add data rows
-        rows.slice(1).forEach((row, rowIndex) => {
+        rows.slice(1).forEach(row => {
             const tr = document.createElement('tr');
-            row.forEach((cell, cellIndex) => {
+            row.forEach(cell => {
                 const td = document.createElement('td');
                 td.textContent = cell;
-                // Special handling for "tyranical teabaggers" and the Points For column
-                if (sheetIndex === 0 && rowIndex === 1 && cellIndex === 3) { // Adjust rowIndex and cellIndex as needed
-                    td.textContent = "1,900.00"; // Manually set the correct value
-                }
                 tr.appendChild(td);
             });
             tableBody.appendChild(tr);
@@ -128,13 +123,13 @@
 
         const container = document.getElementById('sheets-container');
         const title = document.createElement('h2');
-        title.textContent = sheetIndex === 0 ? 'SS 2024 Standings' : `Sheet ${sheetIndex + 1}`;
+        title.textContent = sheetIndex === 0 ? 'SS 2024 Standings' : sheetIndex === 1 ? 'Weekly Winners' : `Sheet ${sheetIndex + 1}`;
         container.appendChild(title);
         container.appendChild(sheetContainer);
     }
 
     sheetUrls.forEach((url, index) => fetchData(url, index));
-</script> 
+</script>
 
 </body>
 </html>
