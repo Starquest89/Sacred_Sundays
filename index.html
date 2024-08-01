@@ -73,15 +73,23 @@
         'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
     ];
 
-    async function fetchData(url) {
-        const response = await fetch(url);
-        const data = await response.text();
-        return parseCSV(data);
+    function cleanData(data) {
+        // Remove surrounding quotes and any double quotes inside the fields
+        return data.replace(/^"|"$/g, '').replace(/""/g, '"');
     }
 
     function parseCSV(csv) {
         const rows = csv.split('\n');
-        return rows.map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
+        return rows.map(row => {
+            // Split each row into cells, taking care not to split inside quotes
+            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
+        });
+    }
+
+    async function fetchData(url) {
+        const response = await fetch(url);
+        const data = await response.text();
+        return parseCSV(data);
     }
 
     function updateDOM(data, index) {
