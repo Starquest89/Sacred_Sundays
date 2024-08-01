@@ -32,25 +32,28 @@
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
         }
         table, th, td {
-            border: 1px solid #000; /* Black borders */
+            border: 1px solid #ddd;
         }
         th, td {
             padding: 10px;
             text-align: left;
-            font-weight: bold; /* Make text bold */
         }
         th {
-            background-color: #003366; /* Dark blue */
-            color: #ffffff; /* White text */
+            background-color: #3498db; /* Blue */
+            color: #fff;
+            font-weight: bold;
         }
         tr:nth-child(even) {
-            background-color: #e6f2ff; /* Light blue */
+            background-color: #e6f2ff;
         }
         tr:nth-child(odd) {
-            background-color: #ffffff; /* White */
+            background-color: #ffffff;
         }
         tr:hover {
-            background-color: #e4dfec; /* Light purple on hover */
+            background-color: #e4dfec;
+        }
+        .right-align {
+            text-align: right; /* CSS for right alignment */
         }
         h2 {
             text-align: center;
@@ -66,77 +69,85 @@
         <!-- Tables will be inserted here -->
     </div>
 
-<script>
-    const sheetUrls = [
-        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
-        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
-        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
-    ];
+    <script>
+        const sheetUrls = [
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
+        ];
 
-    function cleanData(data) {
-        return data.replace(/^"|"$/g, '').replace(/""/g, '"');
-    }
-
-    function parseCSV(csv) {
-        const rows = csv.split('\n');
-        return rows.map(row => {
-            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
-        });
-    }
-
-    async function fetchData(url, index) {
-        const response = await fetch(url);
-        const data = await response.text();
-        let rows = parseCSV(data);
-
-        // Limit columns for the Weekly Winners sheet to only 15 columns
-        if (index === 1) { // Assuming sheetIndex 1 is the Weekly Winners sheet
-            rows = rows.map(row => row.slice(0, 15)); // Keep only the first 15 columns
+        function cleanData(data) {
+            return data.replace(/^"|"$/g, '').replace(/""/g, '"');
         }
 
-        return { rows, index };
-    }
-
-    function updateDOM({ rows, index }) {
-        const sheetContainer = document.createElement('div');
-        const table = document.createElement('table');
-        const tableHead = document.createElement('thead');
-        const tableBody = document.createElement('tbody');
-        const tableHeaderRow = document.createElement('tr');
-
-        // Add headers
-        rows[0].forEach(header => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            tableHeaderRow.appendChild(th);
-        });
-        tableHead.appendChild(tableHeaderRow);
-        table.appendChild(tableHead);
-
-        // Add data rows
-        rows.slice(1).forEach(row => {
-            const tr = document.createElement('tr');
-            row.forEach(cell => {
-                const td = document.createElement('td');
-                td.textContent = cell;
-                tr.appendChild(td);
+        function parseCSV(csv) {
+            const rows = csv.split('\n');
+            return rows.map(row => {
+                return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
             });
-            tableBody.appendChild(tr);
+        }
+
+        async function fetchData(url, index) {
+            const response = await fetch(url);
+            const data = await response.text();
+            let rows = parseCSV(data);
+
+            // Limit columns for the Weekly Winners sheet to only 15 columns
+            if (index === 1) {
+                rows = rows.map(row => row.slice(0, 15)); // Keep only the first 15 columns
+            }
+
+            return { rows, index };
+        }
+
+        function updateDOM({ rows, index }) {
+            const sheetContainer = document.createElement('div');
+            const table = document.createElement('table');
+            const tableHead = document.createElement('thead');
+            const tableBody = document.createElement('tbody');
+            const tableHeaderRow = document.createElement('tr');
+
+            // Right-align specific columns
+            const rightAlignColumns = ['Team', 'Score', 'Player'];
+
+            // Add headers
+            rows[0].forEach((header, idx) => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                if (rightAlignColumns.includes(header)) {
+                    th.classList.add('right-align');
+                }
+                tableHeaderRow.appendChild(th);
+            });
+            tableHead.appendChild(tableHeaderRow);
+            table.appendChild(tableHead);
+
+            // Add data rows
+            rows.slice(1).forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, idx) => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    if (rightAlignColumns.includes(rows[0][idx])) {
+                        td.classList.add('right-align');
+                    }
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+            table.appendChild(tableBody);
+            sheetContainer.appendChild(table);
+
+            const container = document.getElementById('sheets-container');
+            const title = document.createElement('h2');
+            title.textContent = index === 0 ? 'SS 2024 Standings' : index === 1 ? 'Weekly Winners' : `Sheet ${index + 1}`;
+            container.appendChild(title);
+            container.appendChild(sheetContainer);
+        }
+
+        Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
+            data.forEach(updateDOM);
         });
-        table.appendChild(tableBody);
-        sheetContainer.appendChild(table);
-
-        const container = document.getElementById('sheets-container');
-        const title = document.createElement('h2');
-        title.textContent = index === 0 ? 'SS 2024 Standings' : index === 1 ? 'Weekly Winners' : `Sheet ${index + 1}`;
-        container.appendChild(title);
-        container.appendChild(sheetContainer);
-    }
-
-    Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
-        data.forEach(updateDOM);
-    });
-</script>
-
+    </script>
 </body>
 </html>
