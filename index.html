@@ -7,8 +7,8 @@
    <style>
     body {
         font-family: Arial, sans-serif;
-        background-color: #f4f4f9;
-        color: #333;
+        background-color: #f4f4f9; /* Soft grey background for light contrast */
+        color: #333; /* Standard text color */
         margin: 0;
         padding: 20px;
     }
@@ -17,32 +17,39 @@
         max-width: 1000px;
         margin: 20px auto;
         border-collapse: collapse;
-        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
     }
     th, td {
         padding: 12px 15px;
-        border: 1px solid #ddd;
+        border: 1px solid #ccc; /* Lighter border for less visual weight */
         text-align: center;
     }
     th {
-        background-color: #3498db;
-        color: #ffffff;
+        background-color: #e74c3c; /* Bold red */
+        color: #ffffff; /* White text for contrast */
         font-size: 16px;
     }
+    tr:nth-child(odd) {
+        background-color: #3498db; /* Vibrant blue for alternate rows */
+        color: #ffffff; /* Ensure text contrast */
+    }
     tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: #2ecc71; /* Bright green for alternate rows */
+        color: #ffffff; /* Ensure text contrast */
     }
     tr:hover {
-        background-color: #dddfe2;
+        background-color: #f39c12; /* Orange on hover for interactivity */
+        color: #ffffff;
         cursor: pointer;
     }
     .double-line-border-horizontal {
-        border-bottom: double 3px #333;
+        border-bottom: double 5px #9b59b6; /* Deep purple for emphasis */
     }
     .double-line-border-vertical {
-        border-right: double 3px #333;
+        border-right: double 5px #8e44ad; /* Darker purple for vertical emphasis */
     }
 </style>
+
 </head>
 <body>
     <h1>Google Sheet Data</h1>
