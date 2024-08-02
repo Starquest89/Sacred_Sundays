@@ -3,117 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sacred Sunday 2024 Season</title>
-   <style>
-    body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f9;  /* Light gray background provides a neutral backdrop */
-        color: #333;  /* Standard text color for good readability */
-        margin: 0;
-        padding: 20px;
-    }
-    table {
-        width: 90%;
-        max-width: 1000px;
-        margin: 20px auto;
-        border-collapse: collapse;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);  /* Subtle shadow for a 3D effect */
-    }
-    th, td {
-        padding: 12px 15px;
-        border: 1px solid #ddd;  /* Light gray border keeps the look soft */
-        text-align: center;
-    }
-    th {
-        background-color: #2c3e50;  /* Deep blue for headers */
-        color: #ffffff;  /* White text for high contrast */
-        font-size: 16px;
-    }
-    tr:nth-child(odd) {
-        background-color: #ead1dc;  /* Updated to new pink shade for odd rows */
-        color: #333;  /* Dark text ensures readability */
-    }
-    tr:nth-child(even) {
-        background-color: #e4dfec;  /* Updated to new light blue (lavender) shade for even rows */
-        color: #333;  /* Dark text for consistency */
-    }
-    tr:hover {
-        background-color: #f8c6c9;  /* Light pink for hover, providing a gentle highlight */
-        color: #333;
-        cursor: pointer;
-    }
-    .double-line-border-horizontal {
-        border-bottom: double 3px #5d6d7e;  /* A darker shade of gray for emphasis */
-    }
-    .double-line-border-vertical {
-        border-right: double 3px #5d6d7e;  /* Consistent with horizontal borders */
-    }
-</style>
-
+    <title>Dynamic Table from Google Sheets</title>
+    <style>
+        /* Your existing CSS styles */
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
 </head>
 <body>
-    <h1>Google Sheet Data</h1>
-
     <div id="sheets-container">
-        <!-- Tables will be inserted here -->
+        <!-- The tables will be inserted here -->
     </div>
 
-   <script>
-    const sheetUrls = [
-        'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019',
-       // 'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=1442667563',
-       // 'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
-    ];
+    <script>
+        const sheetUrls = [
+            'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=2112652019'
+            // Other URLs can be added here
+        ];
 
-   async function fetchData(url, index) {
-        const response = await fetch(url);
-        const data = await response.text();
-        return { rows: parseCSV(data), index };
-    }
+        async function fetchData(url, index) {
+            const response = await fetch(url);
+            const data = await response.text();
+            return { rows: parseCSV(data), index };
+        }
 
-    function parseCSV(csv) {
-        const rows = csv.split('\n').map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData));
-        return rows;
-    }
+        function parseCSV(csv) {
+            const rows = csv.split('\n').map(row => row.split(',').map(cell => cell.trim('"')));
+            return rows;
+        }
 
-    function cleanData(data) {
-        return data.replace(/^"|"$/g, '').replace(/""/g, '"');
-    }
+        function updateDOM({ rows, index }) {
+            const sheetContainer = document.createElement('div');
+            const table = document.createElement('table');
+            const tableHead = document.createElement('thead');
+            const tableBody = document.createElement('tbody');
+            const tableHeaderRow = document.createElement('tr');
 
-    function updateDOM({ rows, index }) {
-        const container = document.getElementById('sheets-container');
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-
-        // Header row
-        const headerRow = document.createElement('tr');
-        rows[0].forEach(header => {
-            const th = document.createElement('th');
-            th.textContent = header;
-            headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-
-        // Data rows
-        rows.slice(1).forEach((row, idx) => {
-            const tr = document.createElement('tr');
-            row.forEach(cell => {
-                const td = document.createElement('td');
-                td.textContent = cell;
-                tr.appendChild(td);
+            rows[0].forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                tableHeaderRow.appendChild(th);
             });
-            tbody.appendChild(tr);
-        });
+            tableHead.appendChild(tableHeaderRow);
+            table.appendChild(tableHead);
 
-        table.appendChild(thead);
-        table.appendChild(tbody);
-        container.appendChild(table);
-    }
+            rows.slice(1).forEach(row => {
+                const tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            });
+            table.appendChild(tableBody);
+            sheetContainer.appendChild(table);
+            const container = document.getElementById('sheets-container');
+            container.appendChild(sheetContainer);
+        }
 
-    sheetUrls.forEach(url => fetchData(url, 0).then(updateDOM));
-</script>
-
-
+        sheetUrls.forEach(url => fetchData(url, 0).then(updateDOM));
+    </script>
 </body>
 </html>
