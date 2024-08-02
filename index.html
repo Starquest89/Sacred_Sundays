@@ -4,74 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sacred Sunday 2024 Season</title>
-    <style>
+   <style>
     body {
         font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
         background-color: #f4f4f9;
         color: #333;
-    }
-    h1 {
-        text-align: center;
-        margin-top: 20px;
-        color: #444;
-    }
-    #sheets-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin: 20px;
+        margin: 0;
+        padding: 20px;
     }
     table {
         width: 90%;
         max-width: 1000px;
+        margin: 20px auto;
         border-collapse: collapse;
-        margin-bottom: 40px;
-        background-color: #ffffff;
-        box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-    }
-    table, th, td {
-        border: 1px solid #ddd;
-        text-align: center; /* Center align all text */
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
     }
     th, td {
-        padding: 10px;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        text-align: center;
     }
     th {
-        background-color: #073763; /* Blue */
-        color: #fff;
-        font-weight: bold;
+        background-color: #3498db;
+        color: #ffffff;
+        font-size: 16px;
     }
     tr:nth-child(even) {
-        background-color: #e6f2ff;
-    }
-    tr:nth-child(odd) {
-        background-color: #ffffff;
+        background-color: #f2f2f2;
     }
     tr:hover {
-        background-color: #cce5ff;
+        background-color: #dddfe2;
+        cursor: pointer;
     }
-    .right-align {
-        text-align: right; /* Right align specific cells */
+    .double-line-border-horizontal {
+        border-bottom: double 3px #333;
     }
-    .double-line-border {
-        border-bottom: double 3px #333; /* Double line border */
+    .double-line-border-vertical {
+        border-right: double 3px #333;
     }
-    .double-line-vertical {
-        border-right: double 3px #333; /* Double vertical line */
-    }
-    h2 {
-        text-align: center;
-        color: #003366; /* Dark blue */
-        margin-top: 10px;
-    }
-    .double-line-border {
-        border-bottom: double 3px #333; /* Example styling for a double line */
-    }
-
 </style>
-
 </head>
 <body>
     <h1>Google Sheet Data</h1>
@@ -87,73 +58,53 @@
        // 'https://docs.google.com/spreadsheets/d/1I8LisCM8yshVR6INdMXQ1Qi2wzcYB8x8KI4W0dNK_ME/gviz/tq?tqx=out:csv&gid=359638493'
     ];
 
+   async function fetchData(url, index) {
+        const response = await fetch(url);
+        const data = await response.text();
+        return { rows: parseCSV(data), index };
+    }
+
+    function parseCSV(csv) {
+        const rows = csv.split('\n').map(row => row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData));
+        return rows;
+    }
+
     function cleanData(data) {
         return data.replace(/^"|"$/g, '').replace(/""/g, '"');
     }
 
-    function parseCSV(csv) {
-        const rows = csv.split('\n');
-        return rows.map(row => {
-            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(cleanData);
-        });
-    }
-
-    async function fetchData(url, index) {
-        const response = await fetch(url);
-        const data = await response.text();
-        let rows = parseCSV(data);
-
-        return { rows, index };
-    }
-
     function updateDOM({ rows, index }) {
-        const sheetContainer = document.createElement('div');
+        const container = document.getElementById('sheets-container');
         const table = document.createElement('table');
-        const tableHead = document.createElement('thead');
-        const tableBody = document.createElement('tbody');
-        const tableHeaderRow = document.createElement('tr');
-        
-        let week14Index = -1; // To hold the index of "14" column
+        const thead = document.createElement('thead');
+        const tbody = document.createElement('tbody');
 
-        // Add headers and find "14" index
-        rows[0].forEach((header, idx) => {
+        // Header row
+        const headerRow = document.createElement('tr');
+        rows[0].forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
-            if (header === "14") {
-                week14Index = idx; // Set index of "14"
-                th.classList.add('double-line-vertical');
-            }
-            tableHeaderRow.appendChild(th);
+            headerRow.appendChild(th);
         });
-        tableHead.appendChild(tableHeaderRow);
-        table.appendChild(tableHead);
+        thead.appendChild(headerRow);
 
-        // Add data rows
-        rows.slice(1).forEach(row => {
+        // Data rows
+        rows.slice(1).forEach((row, idx) => {
             const tr = document.createElement('tr');
-            row.forEach((cell, idx) => {
+            row.forEach(cell => {
                 const td = document.createElement('td');
                 td.textContent = cell;
-                if (idx === week14Index) {
-                    td.classList.add('double-line-vertical');
-                }
                 tr.appendChild(td);
             });
-            tableBody.appendChild(tr);
+            tbody.appendChild(tr);
         });
-        table.appendChild(tableBody);
-        sheetContainer.appendChild(table);
 
-        const container = document.getElementById('sheets-container');
-        const title = document.createElement('h2');
-        title.textContent = index === 0 ? 'SS 2024 Standings' : index === 1 ? 'Weekly Winners' : `Sheet ${index + 1}`;
-        container.appendChild(title);
-        container.appendChild(sheetContainer);
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        container.appendChild(table);
     }
 
-    Promise.all(sheetUrls.map((url, index) => fetchData(url, index))).then(data => {
-        data.forEach(updateDOM);
-    });
+    sheetUrls.forEach(url => fetchData(url, 0).then(updateDOM));
 </script>
 
 
