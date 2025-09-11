@@ -1,0 +1,393 @@
+/* =====================
+   Design Tokens
+===================== */
+:root{
+  --bg:#f0f4f8;
+  --text:#1f2937;
+  --muted:#6b7280;
+  --card:#fff;
+
+  --brand:#1e2a38;    /* page header / footer */
+  --brand-2:#2c3e50;  /* table header band */
+  --accent:#3498db;
+
+  --win-bg:#d4edda;
+  --win-text:#155724;
+  --loss-bg:#f8d7da;
+  --loss-text:#721c24;
+  --blue:#0040ff;
+
+  --border:#cbd5e1;
+  --shadow:0 2px 5px rgba(0,0,0,.08);
+  --radius:12px;
+
+  --header-h:64px;        /* sticky toolbar offset helper */
+}
+:root.dark{
+  --bg:#121212;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+  --card:#1a1a1a;
+
+  --brand:#111827;
+  --brand-2:#333;
+  --accent:#60a5fa;
+
+  --win-bg:#103b29;
+  --win-text:#a7f3d0;
+  --loss-bg:#3a1414;
+  --loss-text:#fecaca;
+  --blue:#93c5fd;
+
+  --border:#374151;
+  --shadow:0 2px 5px rgba(0,0,0,.4);
+}
+
+/* =====================
+   Base Layout
+===================== */
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
+}
+header,footer{
+  background:var(--brand);
+  color:#fff;
+  padding:1rem clamp(1rem,2vw,2rem);
+  box-shadow:var(--shadow);
+}
+header{
+  position:sticky; top:0; z-index:1000;
+  display:grid; grid-template-columns:1fr auto auto; gap:.75rem; align-items:center;
+}
+header h1{margin:0; font-size:clamp(1.25rem,2.2vw,1.75rem)}
+header .controls{display:flex; gap:.5rem; align-items:center}
+footer{ text-align:center; font-size:.9rem }
+
+main{ padding: clamp(.75rem,2vw,2rem) }
+
+section.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding: clamp(.75rem,1.5vw,1rem);
+  box-shadow:var(--shadow);
+}
+
+.btn{
+  appearance:none; border:1px solid var(--border); background:transparent; color:var(--text);
+  padding:.5rem .75rem; border-radius:999px; cursor:pointer; font-weight:600;
+  transition:background .2s ease, transform .04s ease;
+}
+.btn:hover{ background:rgba(0,0,0,.05) }
+.btn:active{ transform:translateY(1px) }
+.btn.primary{ background:var(--brand-2); color:#fff; border-color:var(--brand-2) }
+.btn.ghost{ border-style:dashed }
+
+/* Header buttons white on dark header */
+header .btn, header .btn.ghost, header .btn.primary{
+  color:#fff; border-color:rgba(255,255,255,.55)
+}
+header .btn:hover{ background:rgba(255,255,255,.12) }
+header .btn:active{ background:rgba(255,255,255,.18) }
+header .btn:focus-visible{ outline:2px solid rgba(255,255,255,.7); outline-offset:2px }
+
+/* Toolbar / Legend under header */
+.toolbar{
+  position:sticky; top:var(--header-h); z-index:950;
+  background:var(--card); border-bottom:1px solid var(--border);
+  padding-block:.5rem; display:flex; flex-wrap:wrap; gap:.5rem; align-items:center;
+  margin-bottom:.5rem;
+}
+.status{ color:var(--muted); font-size:.95rem; display:inline-flex; gap:.5rem; align-items:center }
+.dot{ width:.6rem; height:.6rem; border-radius:999px; background:var(--accent); display:inline-block }
+.legend{ color:var(--muted); font-size:.9rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
+.legend .chip{ display:inline-flex; gap:.35rem; align-items:center }
+.chip i{ width:.85rem; height:.85rem; border-radius:3px; display:inline-block }
+.chip .win-i{ background:var(--win-bg); border:1px solid color-mix(in oklab, var(--win-text) 40%, transparent 60%) }
+.chip .loss-i{ background:var(--loss-bg); border:1px solid color-mix(in oklab, var(--loss-text) 40%, transparent 60%) }
+.chip .bye-i{ background:var(--card); border:1px dashed var(--blue) }
+
+/* =====================
+   Table
+===================== */
+.table-wrap{
+  position:relative; overflow:auto;
+  border-radius:calc(var(--radius) - 4px);
+  background:var(--card);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  --edge-width:10px;
+}
+.table-wrap::before,
+.table-wrap::after{
+  content:""; position:sticky; top:0; bottom:0; width:var(--edge-width);
+  pointer-events:none; z-index:3;
+}
+.table-wrap::before{ left:0;  background:linear-gradient(90deg, var(--bg), transparent) }
+.table-wrap::after { right:0; background:linear-gradient(270deg, var(--bg), transparent) }
+
+table{
+  width:max(100%, 980px);
+  border-collapse:collapse;
+  table-layout:fixed;
+  font-size:.95rem;
+  background:var(--card);
+}
+th,td{
+  padding:.65rem;
+  text-align:center;
+  border:1px solid var(--border);
+  color:var(--text);
+}
+
+/* Header rows (scroll with table; not sticky) */
+thead th{ background:var(--brand-2); color:#fff; font-weight:700 }
+
+/* Stripes & hover */
+tbody tr:nth-child(even){ background:color-mix(in oklab, var(--bg) 85%, black 0%) }
+tbody tr:hover{ background:color-mix(in oklab, var(--bg) 75%, black 0%) }
+
+/* Frozen LEFT columns A & B — OPAQUE + SHADOW DIVIDER (FIX) */
+td.sticky, th.sticky{
+  position:sticky; left:0; z-index:8;
+  background:var(--card);                 /* opaque so content behind doesn't show */
+  box-shadow:6px 0 8px rgba(0,0,0,.06);   /* subtle divider on the right */
+  border-right:1px solid var(--border);
+}
+td.sticky.second, th.sticky.second{ left:60px; z-index:8 } /* 60px = width of col A */
+
+/* Keep zebra / hover visuals consistent for the sticky cells */
+tbody tr:nth-child(even) td.sticky,
+tbody tr:nth-child(even) th.sticky{
+  background:color-mix(in oklab, var(--bg) 85%, black 0%);
+}
+tbody tr:hover td.sticky,
+tbody tr:hover th.sticky{
+  background:color-mix(in oklab, var(--bg) 75%, black 0%);
+}
+
+/* Separators */
+.double-border td{ border-bottom:4px double var(--text) }
+.divider-row td{ padding:0; height:5px; background:var(--brand); border:none; font-size:0 }
+.left-divider{ border-left:4px double var(--text) }
+
+/* Special cells */
+.checkbox-cell{ width:60px; max-width:60px; padding:0 }
+.checkbox-cell input{ transform:scale(1.3); margin:.4rem; accent-color:var(--brand-2) }
+.team-name-cell{
+  width:180px; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  text-align:left; font-weight:600;
+}
+.stacked-label{ text-align:center; line-height:1.2; font-weight:700 }
+.nowrap{ white-space:nowrap; text-align:center; font-weight:700 }
+
+/* Conditional formatting */
+.win{  background:var(--win-bg);  color:var(--win-text);  font-weight:700 }
+.loss{ background:var(--loss-bg); color:var(--loss-text); font-weight:700 }
+.blue-font{ color:var(--blue); font-weight:700 }
+.result-label{ display:inline-block; font-weight:800; font-size:.85rem; line-height:1 }
+
+/* Skeleton */
+.skeleton-row td{
+  background:linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.12), rgba(0,0,0,.06));
+  background-size:200% 100%;
+  animation:shimmer 1.25s infinite; color:transparent;
+}
+@keyframes shimmer{ 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* Sorting arrows (use currentColor so they’re white in header) */
+.sortable{ cursor:pointer; position:relative }
+.sortable.sorted-asc::after,
+.sortable.sorted-desc::after{
+  content:''; position:absolute; right:8px; top:50%;
+  width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent;
+}
+.sortable.sorted-asc::after { border-bottom:7px solid currentColor; transform:translateY(-60%) }
+.sortable.sorted-desc::after{ border-top:7px solid currentColor;  transform:translateY(-40%) }
+
+/* Highlight a selected row */
+.row-highlight{ outline:3px solid var(--accent); outline-offset:-2px }
+.click-highlight{ cursor:pointer }
+.team-logo{ width:22px; height:22px; object-fit:contain; margin-right:.5rem; vertical-align:-3px }
+
+/* =====================
+   Mobile Cards
+===================== */
+.cards{ display:none }
+@media (max-width:900px){
+  #standingsTable{ display:none }
+  #cards{ display:grid; gap:.75rem }
+}
+
+.card-row{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:.75rem .9rem;
+  box-shadow:var(--shadow);
+}
+.cr-head{ display:flex; align-items:center; gap:.5rem; margin-bottom:.25rem }
+.cr-head .team-logo{ width:28px; height:28px }
+.cr-head h3{ margin:0; font-size:1.05rem }
+.ml-auto{ margin-left:auto }
+
+.cr-meta{
+  list-style:none; padding:0; margin:.25rem 0 .4rem;
+  display:flex; flex-wrap:wrap; gap:.75rem 1rem; font-size:.95rem;
+}
+.cr-meta strong{ font-weight:700 }
+
+.cr-weeks{ display:flex; gap:.35rem; flex-wrap:wrap }
+.cr-weeks span{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:1.5rem; height:1.5rem; padding:0 .25rem;
+  border-radius:6px; font-size:.9rem; border:1px solid var(--border);
+}
+.cr-weeks span.w{ background:var(--win-bg);  color:var(--win-text) }
+.cr-weeks span.l{ background:var(--loss-bg); color:var(--loss-text) }
+
+/* =====================
+   Misc
+===================== */
+.subhead td{ background:color-mix(in oklab, var(--bg) 88%, black 0%); font-weight:700 }
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
+
+/* Fit more columns without scrolling */
+table { font-size: .90rem; }             /* was .95rem */
+th, td { padding: .50rem; }              /* a bit tighter */
+
+/* Column A/B widths & sticky offset must match JS constants below */
+td.sticky, th.sticky { left: 0; }        /* A */
+td.sticky.second, th.sticky.second {     /* B starts after A */
+  left: 56px;                            /* = COL_A width in JS */
+}
+
+/* Column B shows full team names */
+.team-name-cell{
+  width: 220px;          /* more space for names */
+  max-width: 220px;
+ white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: left;
+}
+
+/* Everything except column B is centered (C..W) */
+td:not(.team-name-cell) { text-align: center; }
+
+/* Keep all cells inside their boxes */
+th, td { box-sizing: border-box; }
+
+/* Week cells (C..P) — smaller, single line, clipped if needed */
+td.week-cell {
+  font-size: 0.85rem;       /* a notch smaller */
+  line-height: 1.1;         /* tighter line height */
+  white-space: nowrap;      /* never wrap */
+  overflow: hidden;         /* clip overflows */
+  text-overflow: ellipsis;  /* show … if it overflows */
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Summary cells (Q..W) — a hair smaller, same protections */
+td.summary-cell {
+  font-size: 0.9rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Team-name column keeps wrapping (as you asked) */
+.team-name-cell { text-align: left; }
+
+/* Just in case: center every metric cell by default */
+td:not(.team-name-cell) { text-align: center; }
+
+
+/* ===== Table font sizes & alignment ===== */
+
+/* Overall table default (tweak this first) */
+#standingsTable {
+  font-size: 0.95rem;      /* global size for the table */
+}
+
+/* Header cells */
+#standingsTable thead th {
+  font-size: 0.85rem;      /* column header size */
+  line-height: 1.1;
+}
+
+/* Body cells default: center everything */
+#standingsTable tbody td {
+  font-size: 0.62rem;      /* data cell size */
+  line-height: 1.1;
+  text-align: center;      /* C..W centered */
+  white-space: normal;     /* prevent wrapping/overflow */
+  overflow: hidden;
+  text-overflow: ellipsis; /* show … if it doesn’t fit */
+}
+
+/* Column B (team name) stays left-aligned and can be a tad larger */
+#standingsTable tbody td.team-name-cell {
+  text-align: left !important;
+}
+#standingsTable tbody td.team-name-cell .team-name {
+  font-size: 0.85rem;      /* team name size */
+  font-weight: 600;
+}
+
+/* Optional: make week columns (C..P) bold to read faster */
+#standingsTable tbody td:nth-child(n+3):nth-child(-n+16) {
+  font-weight: 700;        /* weeks C..P only */
+}
+
+/* Optional: summary columns (Q..W) slightly smaller to fit */
+#standingsTable tbody td:nth-child(n+17) {
+  font-size: 0.8rem;      /* Q..W (Win, Loss, Win%, PF, Seed, Streak, Earnings) */
+}
+
+/* If header looks cramped on smaller screens */
+@media (max-width: 1400px) {
+  #standingsTable { font-size: 0.90rem; }
+  #standingsTable thead th { font-size: 0.90rem; }
+  #standingsTable tbody td { font-size: 0.86rem; }
+  #standingsTable tbody td.team-name-cell .team-name { font-size: 0.92rem; }
+}
+
+/* Mobile: only show the legend chips (Win / Loss / BYE) in the toolbar */
+@media (max-width: 900px) {
+  .toolbar .status {        /* "Last Page Refresh / Last updated" */
+    display: none !important;
+  }
+}
+
+/* Mobile: make the legend/toolbar NOT sticky */
+@media (max-width: 900px) {
+  .toolbar {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    border-bottom: none;   /* optional: remove the divider line */
+    box-shadow: none;      /* optional: remove any shadow */
+  }
+}
+
+/* Bold Earnings column values (W3:W15) */
+#standingsTable tbody tr:nth-child(n+1):nth-child(-n+15) td:nth-child(23) {
+  font-weight: 700;
+}
+
+/* Force desktop view even on small screens */
+body.force-desktop #standingsTable { display: table !important; }
+body.force-desktop #cards { display: none !important; }
+
+/* (Optional) Force mobile on big screens for testing */
+body.force-mobile #standingsTable { display: none !important; }
+body.force-mobile #cards { display: grid !important; }
+
+

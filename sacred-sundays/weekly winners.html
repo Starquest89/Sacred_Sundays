@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Winnings – Sacred Sundays</title>
+  <meta name="color-scheme" content="light dark" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>💵 Weekly Winnings</h1>
+    <div class="controls">
+      <button id="refresh" class="btn ghost" title="Refresh">↻ Refresh</button>
+      <button id="exportCSV" class="btn ghost" title="Download CSV">⬇️ CSV</button>
+    </div>
+    <div class="controls">
+      <button id="darkModeToggle" class="btn" aria-pressed="false">🌙 Toggle Dark Mode</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <!-- Toolbar: status + filters -->
+      <div class="toolbar">
+        <span class="status" id="status"><span class="dot" aria-hidden="true"></span> Loading weekly winnings…</span>
+        <div style="display:flex; gap:.5rem; align-items:center; margin-left:auto;">
+          <label for="weekFilter" class="sr-only">Filter by week</label>
+          <select id="weekFilter" class="btn" title="Filter by week">
+            <option value="all">All Weeks</option>
+          </select>
+          <button id="clearFilter" class="btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Table view -->
+      <div class="table-wrap" id="tableWrap" role="region" aria-label="Weekly Winnings">
+        <table id="winningsTable">
+          <thead id="thead"></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+
+        <!-- Mobile cards -->
+        <div id="cards" class="cards" aria-label="Weekly Winnings (mobile cards)"></div>
+      </div>
+    </section>
+
+    <!-- Totals by team -->
+    <section class="card">
+      <h2 style="margin-top:0;">Team Totals</h2>
+      <div class="table-wrap" role="region" aria-label="Totals by Team">
+        <table id="totalsTable">
+          <thead>
+            <tr>
+              <th class="sortable" data-col="team">Team</th>
+              <th class="sortable" data-col="total">Total</th>
+              <th class="sortable" data-col="wins"># Awards</th>
+            </tr>
+          </thead>
+          <tbody id="totalsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Sacred Sundays League</p>
+  </footer>
+
+  <script>
+    // ===================== Config =====================
+    const SHEET = {
+      apiKey: 'AIzaSyDqIFrO42J4b0faekmmEGTjKmbZ4PRGc6M',
+      id: '1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo',
+      range: 'Weekly winners!A1:O17' // 👈 UPDATE if your tab/range differs
+    };
+    const qs  = (s, el=document) => el.querySelector(s);
+    const qsa = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+    // Theme (persisted)
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const storedTheme = localStorage.getItem('theme');
+    const rootEl = document.documentElement;
+    function applyTheme(mode) {
+      const dark = mode === 'dark' || (mode === 'auto' && prefersDark);
+      rootEl.classList.toggle('dark', dark);
+      qs('#darkModeToggle').setAttribute('aria-pressed', dark ? 'true' : 'false');
+    }
+    applyTheme(storedTheme || 'auto');
+    qs('#darkModeToggle').addEventListener('click', () => {
+      const nowDark = !rootEl.classList.contains('dark');
+      rootEl.classList.toggle('dark', nowDark);
+      localStorage.setItem('theme', nowDark ? 'dark' : 'light');
+      qs('#darkModeToggle').setAttribute('aria-pressed', nowDark ? 'true' : 'false');
+    });
+
+    // ===================== Fetch + Cache =====================
+    const CACHE_KEY = 'weekly-winnings-cache-v1';
+    const CACHE_TTL = 30 * 1000; // 30s for testing; bump to minutes/hours later
+    async function getSheet() {
+      const now = Date.now();
+      try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+        if (cached && (now - cached.time) < CACHE_TTL) return cached.data;
+      } catch {}
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET.id}/values/${encodeURIComponent(SHEET.range)}?key=${SHEET.apiKey}&t=${Date.now()}`;
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(\`Google Sheets error: \${res.status}\`);
+      const json = await res.json();
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ time: now, data: json })); } catch {}
+      return json;
+    }
+
+    // ===================== Helpers =====================
+    function currencyish(v) {
+      const s = (v ?? '').toString().trim();
+      if (!s) return '';
+      // already formatted?
+      if (s[0] === '$') return s;
+      const n = Number(s.replace(/[^\d.-]/g,''));
+      if (Number.isFinite(n)) return n.toLocaleString(undefined, { style:'currency', currency:'USD', maximumFractionDigits: 2 });
+      return s;
+    }
+    function toCSV(values) {
+      return values.map(r => r.map(v => {
+        const s = (v ?? '').toString().replaceAll('"','""');
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+      }).join(',')).join('\n');
+    }
+    function download(filename, text) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], {type: 'text/csv'}));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    function uniq(arr) { return Array.from(new Set(arr)); }
+
+    // ===================== Renderers =====================
+    let SHEET_VALUES = [];
+    let header = [];
+    let rows = [];
+
+    function buildTable() {
+      const thead = qs('#thead');
+      const tbody = qs('#tbody');
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      // Header
+      const trH = document.createElement('tr');
+      header.forEach((h, i) => {
+        const th = document.createElement('th');
+        th.textContent = h;
+        th.classList.add('sortable');
+        th.dataset.col = i;
+        trH.appendChild(th);
+      });
+      thead.appendChild(trH);
+
+      // Body
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        r.forEach((cell, i) => {
+          const td = document.createElement('td');
+          const head = header[i]?.toLowerCase() || '';
+          if (head.includes('amount') || head === 'total' || head === 'payout') {
+            td.textContent = currencyish(cell);
+          } else {
+            td.textContent = cell ?? '';
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      attachSortHandlers();
+      buildCards();
+      buildTotals();
+    }
+
+    function buildCards() {
+      const cards = qs('#cards');
+      cards.innerHTML = '';
+      // figure week column index
+      const weekCol = header.findIndex(h => /week/i.test(h));
+      const teamCol = header.findIndex(h => /team/i.test(h));
+      const amtCol  = header.findIndex(h => /amount|payout|total/i.test(h));
+      const catCol  = header.findIndex(h => /category|award/i.test(h));
+      const notesCol= header.findIndex(h => /note|desc|description/i.test(h));
+
+      rows.forEach(r => {
+        const card = document.createElement('article'); card.className = 'card-row';
+        const head = document.createElement('div'); head.className = 'cr-head';
+        const title = document.createElement('h3');
+        const wk = weekCol >= 0 ? r[weekCol] : '';
+        const team = teamCol >= 0 ? r[teamCol] : '';
+        title.textContent = `${wk ? 'Week ' + wk + ': ' : ''}${team || '—'}`;
+        head.appendChild(title);
+
+        const meta = document.createElement('ul'); meta.className = 'cr-meta';
+        const amount = amtCol >= 0 ? currencyish(r[amtCol]) : '';
+        const cat    = catCol >= 0 ? r[catCol] : '';
+        const notes  = notesCol >= 0 ? r[notesCol] : '';
+
+        [
+          amtCol >= 0 ? {label: header[amtCol], val: amount} : null,
+          catCol >= 0 ? {label: header[catCol], val: cat} : null,
+          notesCol >= 0 && notes ? {label: header[notesCol], val: notes} : null,
+        ].filter(Boolean).forEach(({label, val}) => {
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>${label}:</strong> ${val}`;
+          meta.appendChild(li);
+        });
+
+        card.appendChild(head);
+        card.appendChild(meta);
+        cards.appendChild(card);
+      });
+    }
+
+    function buildTotals() {
+      const teamCol = header.findIndex(h => /team/i.test(h));
+      const amtCol  = header.findIndex(h => /amount|payout|total/i.test(h));
+      const totals = new Map(); // team -> {sum, count}
+
+      rows.forEach(r => {
+        const team = (teamCol >= 0 ? r[teamCol] : '').trim();
+        if (!team) return;
+        const raw = (amtCol >= 0 ? r[amtCol] : '').toString();
+        const n = Number(raw.replace(/[^\d.-]/g,''));
+        const prev = totals.get(team) || {sum:0, count:0};
+        totals.set(team, { sum: prev.sum + (Number.isFinite(n) ? n : 0), count: prev.count + 1 });
+      });
+
+      const tbody = qs('#totalsBody');
+      tbody.innerHTML = '';
+      Array.from(totals.entries())
+        .sort((a,b)=> b[1].sum - a[1].sum)
+        .forEach(([team, {sum, count}]) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${team}</td><td>${sum.toLocaleString(undefined,{style:'currency',currency:'USD'})}</td><td>${count}</td>`;
+          tbody.appendChild(tr);
+        });
+
+      // simple sorting on totals table
+      qsa('#totalsTable th.sortable').forEach(th => {
+        th.onclick = () => {
+          const col = th.dataset.col; // team | total | wins
+          const rowsArr = Array.from(tbody.rows);
+          rowsArr.sort((r1,r2)=>{
+            const A = r1.cells[col==='team'?0:col==='total'?1:2].textContent.replace(/[^0-9.-]/g,'');
+            const B = r2.cells[col==='team'?0:col==='total'?1:2].textContent.replace(/[^0-9.-]/g,'');
+            if (col==='team') return r1.cells[0].textContent.localeCompare(r2.cells[0].textContent);
+            return (parseFloat(B||'0') - parseFloat(A||'0'));
+          });
+          tbody.innerHTML=''; rowsArr.forEach(r=>tbody.appendChild(r));
+        };
+      });
+    }
+
+    // ===================== Sorting (main table) =====================
+    let sortState = { col: null, dir: 1 };
+    function attachSortHandlers() {
+      qsa('#winningsTable thead th').forEach((th, idx) => {
+        th.addEventListener('click', () => {
+          const col = Number(th.dataset.col);
+          if (Number.isNaN(col)) return;
+          sortState = (sortState.col === col)
+            ? { col, dir: -sortState.dir }
+            : { col, dir: 1 };
+          doSort(col, sortState.dir);
+          markSortedHeader(col, sortState.dir);
+          buildCards(); // reflect order
+        });
+        th.dataset.col = idx; // ensure dataset is set
+        th.classList.add('sortable');
+      });
+    }
+    function markSortedHeader(col, dir) {
+      qsa('#winningsTable thead th').forEach(th => th.classList.remove('sorted-asc','sorted-desc'));
+      const target = qs(`#winningsTable thead th[data-col="${col}"]`);
+      if (target) target.classList.add(dir === 1 ? 'sorted-asc' : 'sorted-desc');
+    }
+    function doSort(col, dir) {
+      const tbody = qs('#tbody');
+      const rowsArr = Array.from(tbody.rows);
+      rowsArr.sort((a,b)=>{
+        const A = a.cells[col]?.textContent.trim() ?? '';
+        const B = b.cells[col]?.textContent.trim() ?? '';
+        const nA = parseFloat(A.replace(/[$,% ,]/g,''));
+        const nB = parseFloat(B.replace(/[$,% ,]/g,''));
+        const aNum = !Number.isNaN(nA);
+        const bNum = !Number.isNaN(nB);
+        if (aNum && bNum) return (nA - nB) * dir;
+        return A.localeCompare(B, undefined, { numeric: true, sensitivity: 'base' }) * dir;
+      });
+      tbody.innerHTML = ''; rowsArr.forEach(r=>tbody.appendChild(r));
+    }
+
+    // ===================== Filters =====================
+    function populateWeekFilter() {
+      const weekCol = header.findIndex(h => /week/i.test(h));
+      const sel = qs('#weekFilter');
+      sel.innerHTML = '<option value="all">All Weeks</option>';
+      if (weekCol < 0) return;
+      const weeks = uniq(rows.map(r => r[weekCol]).filter(Boolean));
+      weeks.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w; opt.textContent = 'Week ' + w;
+        sel.appendChild(opt);
+      });
+    }
+    function applyWeekFilter() {
+      const val = qs('#weekFilter').value;
+      const weekCol = header.findIndex(h => /week/i.test(h));
+      if (val === 'all' || weekCol < 0) {
+        qsa('#tbody tr').forEach(tr => tr.style.display = '');
+        qsa('#cards .card-row').forEach(c => c.style.display = '');
+      } else {
+        qsa('#tbody tr').forEach(tr => {
+          const cell = tr.cells[weekCol]?.textContent.trim();
+          tr.style.display = (cell === val) ? '' : 'none';
+        });
+        qsa('#cards .card-row').forEach(card => {
+          const title = card.querySelector('.cr-head h3')?.textContent || '';
+          card.style.display = title.includes('Week ' + val) ? '' : 'none';
+        });
+      }
+    }
+
+    // ===================== Init =====================
+    let lastValues = null;
+    async function load() {
+      qs('#status').innerHTML = '<span class="dot"></span> Loading weekly winnings…';
+      try {
+        const json = await getSheet();
+        const values = json.values || [];
+        lastValues = values;
+
+        if (!values.length) throw new Error('No rows returned');
+
+        header = values[0].map(h => (h || '').toString().trim());
+        rows = values.slice(1).map(r => header.map((_,i) => (r[i] ?? '').toString().trim()));
+
+        buildTable();
+        populateWeekFilter();
+        applyWeekFilter();
+
+        qs('#status').textContent = `Last Page Refresh: ${new Date().toLocaleString()}`;
+      } catch (err) {
+        console.error(err);
+        qs('#thead').innerHTML = '';
+        qs('#tbody').innerHTML = `<tr><td>⚠️ Error loading. <button class="btn" id="retry">Try again</button></td></tr>`;
+        qs('#status').textContent = 'Error loading.';
+        qs('#retry')?.addEventListener('click', load);
+      }
+    }
+
+    // Events
+    document.getElementById('refresh').addEventListener('click', () => {
+      localStorage.removeItem(CACHE_KEY);
+      load();
+    });
+    document.getElementById('exportCSV').addEventListener('click', () => {
+      if (!lastValues) return;
+      download('weekly-winnings.csv', toCSV(lastValues));
+    });
+    document.getElementById('weekFilter').addEventListener('change', applyWeekFilter);
+    document.getElementById('clearFilter').addEventListener('click', () => {
+      qs('#weekFilter').value = 'all';
+      applyWeekFilter();
+    });
+
+    load();
+  </script>
+</body>
+</html>
