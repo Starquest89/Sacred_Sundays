@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sacred Sundays Fantasy League</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Sacred Sundays 🏈</h1>
+    <button id="darkModeToggle">Toggle Dark Mode</button>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="standings.html">Standings</a></li>
+      <li><a href="weekly-winners.html">Weekly Winners</a></li>
+      <li><a href="payouts.html">Payouts</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="finances.html">Finances</a></li>
+      <li><a href="history.html">Owner & Team History</a></li>
+      <li><a href="lifetime.html">Lifetime Record</a></li>
+    </ul>
+  </nav>
+
+  <main>
+    <section>
+      <h2>Welcome to Sacred Sundays</h2>
+      <p>Your league’s digital home for stats, standings, and smack talk.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Sacred Sundays League</p>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById('darkModeToggle');
+    toggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+  </script>
+</body>
+</html>
