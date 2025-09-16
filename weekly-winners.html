@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sacred Sundays — Weekly Winners</title>
+<style>
+  /* ---------- Theme tokens (light by default) ---------- */
+  :root{
+    --bg:#f4f6f9; --text:#111827; --muted:#6b7280; --card:#ffffff; --border:#e5e7eb;
+    --brand:#1e2a38; --band:#2c3e50; --hover:#f8fafc;
+
+    --chip:#eef2ff; --chipText:#1e3a8a;
+    --chipWin:#dcfce7; --chipWinText:#166534;
+    --chipLoss:#fee2e2; --chipLossText:#991b1b;
+    --chipPlayer:#e0f2fe; --chipPlayerText:#075985;
+  }
+  body.dark{
+    --bg:#0b1220; --text:#e5e7eb; --muted:#94a3b8; --card:#0f172a; --border:#1f2937;
+    --brand:#0b1220; --band:#111a2e; --hover:#0c1529;
+
+    --chip:#1f2937; --chipText:#c7d2fe;
+    --chipWin:#052e1a; --chipWinText:#86efac;
+    --chipLoss:#3b0a0a; --chipLossText:#fecaca;
+    --chipPlayer:#0b2840; --chipPlayerText:#7dd3fc;
+  }
+
+  /* ---------- Base ---------- */
+  * { box-sizing:border-box }
+  body{margin:0;font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial;background:var(--bg);color:var(--text)}
+  a{ color:inherit }
+
+  /* ---------- Header ---------- */
+  header{background:var(--brand);color:#fff}
+  .bar{
+    max-width:1100px;margin:0 auto;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 12px;gap:12px;flex-wrap:wrap;
+  }
+  h1{margin:0;font-size:28px;letter-spacing:.2px}
+
+  /* ---------- Pills (match Standings look) ---------- */
+  .pill-group{display:flex;gap:12px;flex-wrap:wrap}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    /* unify <a> and <button> sizing */
+    box-sizing:border-box;
+    height:44px; padding:10px 16px; line-height:1;
+
+    border:2px dashed rgba(255,255,255,.55);
+    border-radius:9999px;
+    color:#fff; background:transparent;
+    font-weight:700; text-decoration:none;
+    cursor:pointer; user-select:none;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  button.pill{ appearance:none; -webkit-appearance:none; background:transparent; }
+  .pill:hover{ background:rgba(255,255,255,.07) }
+  .pill .ico{ font-size:18px; line-height:1; display:inline-block; width:1.1em; text-align:center }
+
+  /* Mobile: 2×2 grid for four header pills (two rows) */
+  @media (max-width:480px){
+    .pill-group{
+      display:grid; grid-template-columns:1fr 1fr; gap:12px; width:100%;
+    }
+    .pill{ justify-content:center; height:44px }
+  }
+
+  /* ---------- Content wrappers ---------- */
+  .wrap{max-width:1100px;margin:16px auto;padding:0 12px}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
+
+  /* ---------- Filters ---------- */
+  .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  select{
+    padding:10px 12px;border:1px solid var(--border);border-radius:10px;
+    min-width:180px;background:var(--card);color:var(--text)
+  }
+  /* Mobile: all three filters on one row */
+  @media (max-width:480px){
+    .filters{
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+    }
+    .filters select{min-width:0;width:100%}
+  }
+
+  .summary{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-weight:600;margin:10px 0 2px}
+  .note{font-size:12px;color:var(--muted)}
+  .status{padding:8px 12px;border-radius:10px;margin-top:8px;border:1px solid transparent;display:none}
+  .status.err{display:block;background:#fee2e2;color:#991b1b;border-color:#fecaca}
+
+  /* ---------- Table (sticky head) ---------- */
+  .table-wrap{margin-top:12px;overflow:auto;max-height:70vh;position:relative}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card)}
+  thead th{
+    background:var(--band);color:#fff;position:sticky;top:0;z-index:2;
+    box-shadow:0 2px 0 rgba(0,0,0,.06);
+  }
+  th,td{padding:14px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+  tbody tr{background:var(--card)}
+  tbody tr:hover{background:var(--hover)}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable .arrow{opacity:.6;margin-left:6px}
+  .team-cell{display:flex;align-items:center;gap:10px}
+  .team-logo{width:26px;height:26px;border-radius:6px;object-fit:cover;border:1px solid var(--border);background:#fff}
+
+  /* Award chips */
+  .chip{display:inline-block;padding:4px 10px;border-radius:9999px;font-size:12px;font-weight:700;white-space:nowrap}
+  .chip-default{background:var(--chip);color:var(--chipText)}
+  .chip-win{background:var(--chipWin);color:var(--chipWinText)}
+  .chip-loss{background:var(--chipLoss);color:var(--chipLossText)}
+  .chip-player{background:var(--chipPlayer);color:var(--chipPlayerText)}
+
+  /* Desktop hides the “Team/Player Score:” label; mobile shows it */
+  .mob-k{display:none}
+
+  /* ---------- Mobile cards ---------- */
+  @media (max-width:900px){
+    .table-wrap{max-height:none;overflow:visible}
+    table, thead, tbody, th, td, tr{display:block}
+    thead{display:none}
+    .mob-k{display:inline;font-weight:700;color:var(--muted);margin-right:6px}
+
+    tr{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      margin-bottom:12px;
+      padding:10px;
+      box-shadow:0 2px 6px rgba(0,0,0,.04);
+      display:grid;
+      grid-template-columns: minmax(0,1.25fr) auto minmax(0,0.95fr);
+      grid-template-rows: auto auto auto;
+      grid-template-areas:
+        "week award earn"
+        "team team team"
+        "score player player";
+      gap:8px; align-items:center;
+    }
+    tr[data-awardtype="team"]{
+      grid-template-areas:
+        "week award earn"
+        "team team team"
+        "score score score";
+    }
+    td{border:none;padding:6px}
+    td::before{display:none !important}
+    td[data-col="Week"]     {grid-area:week;  align-self:center; font-weight:700}
+    td[data-col="Award"]    {grid-area:award; align-self:center; justify-self:center; text-align:center}
+    td[data-col="Earnings"] {grid-area:earn;  align-self:center; justify-self:end; font-weight:700}
+    td[data-col="Team"]     {grid-area:team}
+    td[data-col="Score"]    {grid-area:score; white-space:nowrap}
+    td[data-col="Player"]   {grid-area:player; justify-self:end}
+    tr[data-awardtype="team"] td[data-col="Player"],
+    td[data-col="Player"][data-empty="1"]{ display:none }
+    .team-cell{gap:8px}
+    .team-logo{width:22px;height:22px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>Weekly Winners</h1>
+    <div class="pill-group">
+      <a href="index.html" id="homeBtn" class="pill"><span class="ico">🏠</span>Home</a>
+      <button id="resetBtn" class="pill" type="button"><span class="ico">↻</span>Reset Winners</button>
+      <button id="csvBtn"   class="pill" type="button"><span class="ico">⬇️</span>CSV</button>
+      <button id="themeBtn" class="pill" type="button" aria-pressed="false"><span class="ico">🌙</span>Dark Mode</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="panel">
+    <div class="filters">
+      <select id="fWeek"><option value="">Week</option></select>
+      <select id="fAward"><option value="">Award</option></select>
+      <select id="fTeam"><option value="">Team</option></select>
+    </div>
+    <div class="summary">
+      <div>Rows: <span id="rows">0</span></div>
+      <div>Earnings Total: <span id="total">$0.00</span></div>
+      <div class="note" id="stamp"></div>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="panel table-wrap">
+    <table id="tbl" aria-describedby="total">
+      <thead>
+        <tr>
+          <th class="sortable" data-key="Week">Week <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="Award">Award <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="Team">Team <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="Score">Team/Player Score <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="Player">Player <span class="arrow">↕</span></th>
+          <th class="sortable" data-key="Earnings">Earnings <span class="arrow">↕</span></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/* ========= CONFIG ========= */
+const SHEET_ID = "1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo";
+const TAB_NAME = "weekly-winners";
+const RANGE    = "A1:F43";
+
+/* Team logo paths (same as Standings) */
+const TEAM_IMG_BASE = "Images/teams/";
+const TEAM_IMG_EXT  = ".png";
+const TEAM_OVERRIDES = {}; // e.g. { "delco-dingleberries":"custom.svg" }
+
+/* ========= Helpers ========= */
+const $ = s => document.querySelector(s);
+const fmtMoney = n => (Number(n)||0).toLocaleString(undefined,{style:"currency",currency:"USD"});
+const moneyToNumber = v => Number(String(v??"").replace(/[^0-9.-]/g,"")) || 0;
+
+function slugify(name){
+  return String(name||"").toLowerCase()
+    .replace(/&/g,"and")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"");
+}
+function imgSourcesForTeam(team){
+  if(!team) return null;
+  const key = slugify(team);
+  if (TEAM_OVERRIDES[key]) {
+    const file = TEAM_OVERRIDES[key];
+    const isSvg = /\.svg$/i.test(file);
+    return { png: TEAM_IMG_BASE + file, svg: isSvg ? TEAM_IMG_BASE + file : TEAM_IMG_BASE + file.replace(/\.png$/i,".svg") };
+  }
+  const base = TEAM_IMG_BASE + slugify(team);
+  return { png: base + TEAM_IMG_EXT, svg: base + ".svg" };
+}
+function awardChipHtml(award){
+  const A = (award||"").toLowerCase();
+  let cls = "chip-default";
+  if (A.includes("win")) cls = "chip-win";
+  else if (A.includes("loss")) cls = "chip-loss";
+  else if (A.includes("player")) cls = "chip-player";
+  return `<span class="chip ${cls}">${award ?? ""}</span>`;
+}
+function showError(msg){
+  const el=$("#status"); el.textContent = msg; el.className = "status err"; el.style.display = "block";
+}
+function clearError(){ const el=$("#status"); el.textContent=""; el.style.display="none"; }
+
+/* ========= Fetch GViz ========= */
+async function fetchGViz(sheetId, tab, range){
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?`+
+              new URLSearchParams({sheet:tab, range});
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+  return json;
+}
+function parseGViz(json){
+  const cols = (json.table.cols||[]).map(c => (c.label||c.id||"").trim());
+  const rows = (json.table.rows||[]).map(r=>{
+    const obj={};
+    (r.c||[]).forEach((cell,i)=>{
+      const key = cols[i] || `col${i}`;
+      const val = cell ? (cell.f ?? cell.v) : "";
+      obj[key]=val;
+    });
+    return obj;
+  });
+  return rows;
+}
+function normalize(rows){
+  const headers = Object.keys(rows[0]||{}).map(h=>h.trim().toLowerCase());
+  const idx = nameList => headers.findIndex(h=>nameList.includes(h));
+  const at = (r,i) => (i>=0 ? r[Object.keys(r)[i]] : "");
+
+  const iW = idx(["week"]);
+  const iA = idx(["award"]);
+  const iT = idx(["team"]);
+  const iS = idx(["team/player score","teamplayer score","score"]);
+  const iP = idx(["player"]);
+  const iE = idx(["earnings","earning"]);
+
+  return rows.map(r=>({
+    Week:   at(r,iW),
+    Award:  String(at(r,iA) ?? ""),
+    Team:   String(at(r,iT) ?? ""),
+    Score:  at(r,iS),
+    Player: String(at(r,iP) ?? ""),
+    Earnings: moneyToNumber(at(r,iE))
+  }));
+}
+
+/* ========= State & UI ========= */
+let RAW = [];
+let STATE = {week:"", award:"", team:"", sortKey:"Week", sortDir:"desc"}; // newest first
+
+const rowsWithTeams = arr => arr.filter(r => String(r.Team||"").trim() !== "");
+
+function fillFilters(){
+  const uniq = arr => [...new Set(arr.filter(v=>v!=null && v!==""))];
+  const numSort = list => list.slice().sort((a,b)=>{
+    const na=Number(a), nb=Number(b);
+    return (Number.isFinite(na)&&Number.isFinite(nb))? na-nb : String(a).localeCompare(String(b));
+  });
+  const data = rowsWithTeams(RAW);
+  $("#fWeek").innerHTML  = '<option value="">Week</option>' +
+    numSort(uniq(data.map(r=>r.Week))).map(w=>`<option value="${w}">${w}</option>`).join("");
+  $("#fAward").innerHTML = '<option value="">Award</option>' +
+    uniq(data.map(r=>r.Award)).sort((a,b)=>a.localeCompare(b)).map(a=>`<option value="${a}">${a}</option>`).join("");
+  $("#fTeam").innerHTML  = '<option value="">Team</option>' +
+    uniq(data.map(r=>r.Team)).sort((a,b)=>a.localeCompare(b)).map(t=>`<option value="${t}">${t}</option>`).join("");
+}
+
+function applyFilters(rows){
+  return rows.filter(r =>
+    (!STATE.week  || String(r.Week)===STATE.week) &&
+    (!STATE.award || r.Award===STATE.award) &&
+    (!STATE.team  || r.Team===STATE.team)
+  );
+}
+function sortRows(rows){
+  const {sortKey, sortDir} = STATE;
+  const numeric = (sortKey==="Week" || sortKey==="Score" || sortKey==="Earnings");
+  return rows.slice().sort((a,b)=>{
+    let va=a[sortKey], vb=b[sortKey];
+    if(numeric){ va=Number(va)||0; vb=Number(vb)||0; return sortDir==="asc"? va-vb : vb-va; }
+    va=(va??"").toString().toLowerCase(); vb=(vb??"").toString().toLowerCase();
+    return sortDir==="asc" ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+}
+
+function render(){
+  const tbody = $("#tbl tbody"); tbody.innerHTML = "";
+
+  let rows = rowsWithTeams(RAW);
+  rows = applyFilters(rows);
+  rows = sortRows(rows);
+
+  $("#rows").textContent = rows.length.toLocaleString();
+  const total = rows.reduce((s,r)=> s + (Number(r.Earnings)||0), 0);
+  $("#total").textContent = fmtMoney(total);
+
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    const isTeamAward = /\(team\)/i.test(r.Award || "");
+    tr.setAttribute("data-awardtype", isTeamAward ? "team" : "player");
+
+    const srcs = imgSourcesForTeam(r.Team);
+    const imgHtml = srcs ? `
+      <img class="team-logo"
+           src="${srcs.png}"
+           data-src-svg="${srcs.svg}"
+           alt="${r.Team}"
+           onerror="if(!this.dataset.svgTried){this.dataset.svgTried=1; this.src=this.dataset.srcSvg;} else {this.style.display='none';}">
+    ` : "";
+
+    const playerText = (r.Player || "").trim();
+
+    tr.innerHTML = `
+      <td data-col="Week">${r.Week ? `Week ${r.Week}` : ""}</td>
+      <td data-col="Award">${awardChipHtml(r.Award)}</td>
+      <td data-col="Team">
+        <div class="team-cell">
+          ${imgHtml}
+          <span>${r.Team ?? ""}</span>
+        </div>
+      </td>
+      <td data-col="Score"><span class="mob-k">Team/Player Score:</span>${r.Score ?? ""}</td>
+      <td data-col="Player" ${playerText ? "" : 'data-empty="1"'}>${playerText}</td>
+      <td data-col="Earnings">${fmtMoney(r.Earnings)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function wireSort(){
+  document.querySelectorAll("th.sortable").forEach(th=>{
+    th.addEventListener("click", ()=>{
+      const key = th.dataset.key;
+      if(STATE.sortKey===key){ STATE.sortDir = (STATE.sortDir==="asc" ? "desc" : "asc"); }
+      else { STATE.sortKey = key; STATE.sortDir = (key==="Week" ? "desc" : "asc"); }
+      render();
+    });
+  });
+}
+
+/* CSV of visible rows */
+function downloadCSV(){
+  let rows = rowsWithTeams(RAW);
+  rows = applyFilters(rows);
+  rows = sortRows(rows);
+
+  const headers = ["Week","Award","Team","Team/Player Score","Player","Earnings"];
+  const esc = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const lines = [headers.map(esc).join(",")];
+  for(const r of rows){
+    lines.push([r.Week,r.Award,r.Team,r.Score,r.Player,fmtMoney(r.Earnings)].map(esc).join(","));
+  }
+  const blob = new Blob([lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "weekly-winners.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* Reset filters + sort (back to newest Week first) */
+function resetWinners(){
+  STATE = {week:"", award:"", team:"", sortKey:"Week", sortDir:"desc"};
+  $("#fWeek").value=""; $("#fAward").value=""; $("#fTeam").value="";
+  render();
+}
+
+/* Theme */
+function applyThemeVisual(){
+  const isDark = document.body.classList.contains("dark");
+  $("#themeBtn").setAttribute("aria-pressed", isDark ? "true" : "false");
+}
+function toggleTheme(){
+  const next = document.body.classList.toggle("dark");
+  localStorage.setItem("ss_theme", next ? "dark" : "light");
+  applyThemeVisual();
+}
+
+/* Events */
+$("#themeBtn").addEventListener("click", toggleTheme);
+$("#csvBtn").addEventListener("click", downloadCSV);
+$("#resetBtn").addEventListener("click", resetWinners);
+$("#fWeek").addEventListener("change", e=>{ STATE.week=e.target.value; render(); });
+$("#fAward").addEventListener("change", e=>{ STATE.award=e.target.value; render(); });
+$("#fTeam").addEventListener("change", e=>{ STATE.team=e.target.value; render(); });
+
+/* Load */
+async function load(){
+  try{
+    clearError();
+    const json = await fetchGViz(SHEET_ID, TAB_NAME, RANGE);
+    RAW = normalize(parseGViz(json));
+    fillFilters();
+    render();
+    $("#stamp").textContent = "Last updated: " + new Date().toLocaleString();
+  }catch(err){
+    showError(err.message || String(err));
+    $("#rows").textContent = "0";
+    $("#total").textContent = "$0.00";
+    $("#tbl tbody").innerHTML = "";
+  }
+}
+
+/* Init */
+(function init(){
+  const saved = localStorage.getItem("ss_theme");
+  if(saved === "dark") document.body.classList.add("dark");
+  applyThemeVisual();
+  wireSort();
+  load();
+})();
+</script>
+<footer>
+  <div class="wrap">
+    <p>&copy; 2025 Sacred Sundays League</p>
+    <p class="muted">Views: <span id="page-views">—</span></p>
+  </div>
+</footer>
+<script>
+(function(){
+  const PAGE_KEY = "weekly-winners"; // unique per page
+  const NAMESPACE = "sacred-sundays";
+
+  const el = document.getElementById("page-views");
+  if (!el) return;
+
+  fetch(`https://api.countapi.xyz/hit/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(PAGE_KEY)}`)
+    .then(r => r.json())
+    .then(d => { if (d && typeof d.value === "number") el.textContent = d.value.toLocaleString(); })
+    .catch(() => {
+      const localKey = `views:${PAGE_KEY}`;
+      let n = parseInt(localStorage.getItem(localKey) || "0", 10);
+      n++; localStorage.setItem(localKey, String(n));
+      el.textContent = n.toLocaleString();
+    });
+})();
+</script>
+
+</body>
+</html>
+
+
