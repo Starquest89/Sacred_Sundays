@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Payouts — Sacred Sundays</title>
+<meta name="color-scheme" content="light dark" />
+
+<style>
+/* =========================
+   Theme Tokens
+========================= */
+:root{
+  /* layout guard rails for desktop table */
+  --table-min: 1100px;
+  --table-max: 1500px;
+
+  /* per-column widths (desktop) */
+  --col-A: 120px; /* Category */
+  --col-B: 160px; /* Award */
+  --col-C: 160px; /* Team  */
+  --col-D: 90px;  /* Qty   */
+  --col-E: 150px; /* Prize */
+  --col-F: 60px;  /* Earn  */
+
+  /* per-column text alignment (start|center|end) */
+  --align-A: start;
+  --align-B: start;
+  --align-C: start;
+  --align-D: center;
+  --align-E: center;
+  --align-F: center;
+
+  /* mobile card typography knobs */
+  --m-cat-size: 10px;  --m-cat-weight: 800;
+  --m-awd-size: 14px;  --m-awd-weight: 200;
+  --m-qty-size: 13px;  --m-qty-weight: 800;
+  --m-earn-size: 13px; --m-earn-weight: 700;
+
+  /* palette */
+  --bg:#eef2f6; --text:#1f2937; --muted:#6b7280; --card:#fff; --border:#d6dbe2;
+  --brand:#0f1b2a; --band:#203044; --accent:#2563eb;
+
+  /* chips */
+  --chip-week-bg:#dbeafe; --chip-week-tx:#1e40af;
+  --chip-non-bg:#e9d5ff;  --chip-non-tx:#4c1d95;
+  --chip-play-bg:#dcfce7; --chip-play-tx:#166534;
+
+  --shadow:0 2px 5px rgba(0,0,0,.08);
+  --radius:12px;
+
+  /* === SPECIAL VIEW (phone + Desktop View) Category chip knobs === */
+  --fd-cat-font-size: 11px;   /* tweak me */
+  --fd-cat-font-weight: 700;  /* tweak me */
+  --fd-cat-pad-y: 2px;        /* tweak me */
+  --fd-cat-pad-x: 10px;       /* tweak me */
+  --fd-cat-radius: 9999px;    /* tweak me */
+}
+:root.dark{
+  --bg:#0b1220; --text:#e5e7eb; --muted:#9ca3af; --card:#0f172a; --border:#243041;
+  --brand:#0b1220; --band:#172334; --accent:#60a5fa;
+
+  --chip-week-bg:#cfe2f3; --chip-week-tx:#073763;
+  --chip-non-bg:#2c1f44;  --chip-non-tx:#dac4ff;
+  --chip-play-bg:#0f2d23; --chip-play-tx:#9be7c2;
+}
+
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+}
+
+/* =========================
+   Header
+========================= */
+header{
+  background:var(--brand); color:#fff; position:sticky; top:0; z-index:1000;
+  box-shadow:var(--shadow);
+}
+header .wrap{
+  max-width:var(--table-max);
+  margin:0 auto; padding:14px 12px 18px;
+
+  display:grid;
+  grid-template-columns: 1fr auto;
+  align-items:center; gap:12px;
+}
+h1{
+  margin:0; 
+  font-size:clamp(22px,2.4vw,32px); 
+  letter-spacing:.2px;
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+  gap:8px;
+  text-align:center;
+}
+.pills{ display:flex; gap:12px; flex-wrap:wrap; justify-content:flex-end }
+.pill{
+  box-sizing:border-box;
+  display:inline-flex; align-items:center; gap:8px; justify-content:center;
+  min-width:144px;
+  height:44px; padding:10px 16px; border-radius:9999px;
+  border:2px dashed rgba(255,255,255,.55);
+  color:#fff; background:transparent; font-weight:800; line-height:1;
+  text-decoration:none; cursor:pointer; user-select:none;
+  transition:background .15s,border-color .15s,transform .08s;
+}
+.pill:hover{ background:rgba(255,255,255,.10) }
+.pill:active{ transform:translateY(1px) }
+.pill .ico{ font-size:18px }
+.pill button{ all:unset }
+
+/* === MOBILE PILLS GRID === */
+@media (max-width: 900px){
+  header .wrap{ grid-template-columns: 1fr; }
+  .pills{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 12px; width: 100%; max-width: 560px; align-items: stretch; justify-items: stretch;
+    margin-left: auto; margin-right: auto;
+  }
+  .pills .pill{ width: 100%; min-width: 0; justify-content: center; }
+  .p-home  { grid-column: 1; grid-row: 1; }
+  .p-reset { grid-column: 2; grid-row: 1; }
+  .p-view  { grid-column: 1; grid-row: 2; }
+  .p-dark  { grid-column: 2; grid-row: 2; }
+  .p-csv   { display: none !important; }
+}
+
+/* =========================
+   Filters panel
+========================= */
+.panel{
+  max-width:var(--table-max); min-width:var(--table-min);
+  margin:14px auto 10px; padding:14px; border:1px solid var(--border);
+  border-radius:14px; background:var(--card); box-shadow:var(--shadow);
+}
+.filters{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  background-color: var(--card); color: var(--text); font-weight: 800;
+  border: 2px solid #2f5ae6; border-radius: 10px;
+  padding: 10px 40px 10px 12px; min-width: 180px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.25 7.5 10 12.25 14.75 7.5" fill="none" stroke="%231d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  background-repeat:no-repeat; background-position:right 10px center; background-size:18px 18px;
+}
+:root.dark .select{
+  border-color:#5fa8ff;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M5.25 7.5 10 12.25 14.75 7.5" fill="none" stroke="%23ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+}
+.stats{ display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; color:var(--muted); font-weight:800; justify-content:flex-start; }
+@media (max-width: 40px){
+  .filters{ gap: 8px }
+  .select{ min-width: 0; flex: 1 1 33%; padding: 9px 36px 9px 10px; font-size: 15px; }
+}
+
+/* =========================
+   Table
+========================= */
+.table-wrap{
+  max-width:var(--table-max); min-width:var(--table-min);
+  margin:0 auto 22px; border-radius:12px; border:1px solid var(--border);
+  background:var(--card); overflow:auto; box-shadow:var(--shadow);
+}
+table{ width:100%; border-collapse:collapse; table-layout:fixed; background:var(--card) }
+thead th{
+  background:var(--band); color:#fff; font-weight:800; text-align:center; position:sticky; top:0; z-index:2;
+  padding:.8rem .6rem; border-bottom:1px solid var(--border);
+}
+thead th > span:first-child{ vertical-align:middle }
+thead th .sort-icon{ opacity:.8; margin-left:6px; font-weight:900 }
+th.sorted-asc .sort-icon::after{ content:" ↑"; font-weight:900 }
+th.sorted-desc .sort-icon::after{ content:" ↓"; font-weight:900 }
+
+tbody td{ padding:.7rem .6rem; border-top:1px solid var(--border); color:var(--text); }
+tbody tr:nth-child(even){ background:color-mix(in srgb, var(--bg) 70%, transparent) }
+
+/* widths + alignments */
+.col-A{ width:var(--col-A); text-align: var(--align-A); }
+.col-B{ width:var(--col-B); text-align: var(--align-B); }
+.col-C{ width:var(--col-C); text-align: var(--align-C); }
+.col-D{ width:var(--col-D); text-align: var(--align-D); }
+.col-E{ width:var(--col-E); text-align: var(--align-E); }
+.col-F{ width:var(--col-F); text-align: var(--align-F); }
+
+/* category chips */
+.chip{ display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:4px 12px; border-radius:999px; font-weight:900; font-size:12px; }
+.chip.week{ background:var(--chip-week-bg); color:var(--chip-week-tx) }
+.chip.non { background:var(--chip-non-bg);  color:var(--chip-non-tx) }
+.chip.play{ background:var(--chip-play-bg); color:var(--chip-play-tx) }
+
+/* team cell with logo */
+.team-cell{ display:flex; align-items:center; gap:10px }
+.team-logo{ width:22px; height:22px; border-radius:6px; object-fit:cover; background:#fff; border:1px solid var(--border) }
+
+/* money pill */
+.money{ display:inline-flex; align-items:center; justify-content:center; min-width:88px; height:32px;
+  padding:0 10px; border-radius:999px; font-weight:900; background:rgba(16,185,129,.18); color:#065f46 }
+:root.dark .money{ background: rgba(34,197,94,.25); color: #ffffff; }
+
+/* =========================
+   Mobile Cards
+========================= */
+.cards{ display:none; max-width:var(--table-max); min-width:0; margin:6px auto 28px; padding:0 8px }
+.card{
+  background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);
+  padding:10px 10px 8px; margin-bottom:10px;
+}
+.card-head{ display:flex; align-items:center; gap:10px; font-size:16px; font-weight:900 }
+.card-head img{ width:24px; height:24px; border-radius:6px; object-fit:cover; background:#fff; border:1px solid var(--border) }
+.card-head .money{ margin-left:auto }
+
+.line{
+  display:grid; grid-template-columns: auto 1fr auto auto; gap:8px; align-items:center;
+  padding:8px 6px; border-radius:8px; border:1px dashed var(--border); margin-top:6px;
+}
+.line .chip{ font-size:var(--m-cat-size); font-weight:var(--m-cat-weight) }
+.line .award{ font-size:var(--m-awd-size); font-weight:var(--m-awd-weight); color:var(--text) }
+.line .qty{ font-size:var(--m-qty-size); font-weight:var(--m-qty-weight); color:var(--muted) }
+.line .money{ font-size:var(--m-earn-size); font-weight:var(--m-earn-weight) }
+
+/* Remove pill look for earnings inside card body lines */
+.card .line .money{
+  background: transparent !important;
+  color: var(--text);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Phones: cards by default unless user forces desktop */
+@media (max-width:900px){
+  body:not(.force-desktop) .table-wrap{ display:none }
+  body:not(.force-desktop) .cards{ display:block }
+}
+
+/* Wide screens: allow forcing mobile */
+@media (min-width:901px){
+  body.force-mobile .table-wrap{ display:none }
+  body.force-mobile .cards{ display:block }
+}
+
+/* --- Fix stretched filters on phones --- */
+@media (max-width: 900px){
+  .panel{
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 90%;
+    margin: 12px auto;
+    padding: 10px;
+  }
+  .filters{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .filters .select{
+    min-width: 0; width: 100%;
+    padding: 8px 30px 8px 10px; font-size: 16px;
+    background-position: right 8px center; background-size: 14px 14px;
+  }
+  .stats{ gap: 10px; row-gap: 4px; font-size: 13px; }
+}
+
+/* =========================
+   SPECIAL: Phone + forced Desktop View
+   - Hide Team column
+   - Shrink table for portrait
+   - Remove green bubble from Earnings
+   - Category chip tweaks (vars above)
+========================= */
+@media (max-width:900px){
+  body.force-desktop th.col-C,
+  body.force-desktop td.col-C { display:none !important; }
+
+  body.force-desktop .table-wrap{
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: auto;
+  }
+  body.force-desktop table{ font-size:12px; }
+  body.force-desktop th,
+  body.force-desktop td{ padding:0.4rem 0.3rem; }
+
+  body.force-desktop td .money{
+    background: transparent !important;
+    color: var(--text) !important;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  body.force-desktop td.col-A .chip{
+    font-size: var(--fd-cat-font-size);
+    font-weight: var(--fd-cat-font-weight);
+    padding: var(--fd-cat-pad-y) var(--fd-cat-pad-x);
+    border-radius: var(--fd-cat-radius);
+  }
+}
+@media (max-width:600px){
+  body.force-desktop table{ font-size:11px; }
+  body.force-desktop th,
+  body.force-desktop td{ padding:0.3rem 0.2rem; }
+}
+
+/* =========================
+   Rotate phone modal
+========================= */
+.modal-backdrop{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.6);
+  display:none;                 /* hidden by default */
+  align-items:center; justify-content:center;
+  z-index:2000;
+}
+.modal{
+  background:#fff; color:#000;
+  padding:20px; border-radius:12px;
+  max-width:280px; width:92%;
+  text-align:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.25);
+}
+.modal .rotate{ font-size:48px; margin-bottom:10px; }
+.modal .actions{
+  margin-top:12px;
+  display:flex;
+  justify-content:center;
+}
+.modal .pill{
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  min-width: 120px;
+  height: 40px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 800;
+}
+:root.dark .modal{ background:#1f2937; color:#fff; }
+:root.dark .modal .pill{
+  border-color:#5fa8ff;
+  color:#5fa8ff;
+  background: transparent;
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+   <h1 class="title">
+     <span class="t-icon" aria-hidden="true">💸</span>
+     <span class="t-text">Payouts</span>
+   </h1>
+
+    <nav class="pills">
+      <a class="pill p-home"  href="index.html"><span class="ico">🏠</span>Home</a>
+      <button id="resetBtn" class="pill p-reset" type="button"><span class="ico">🔄</span>Reset Page</button>
+      <button id="viewBtn"  class="pill p-view"  type="button"><span class="ico">🖥️</span><span id="viewLbl">Desktop View</span></button>
+      <button id="themeBtn" class="pill p-dark"  type="button" aria-pressed="false"><span class="ico">🌙</span><span id="themeLbl">Dark Mode</span></button>
+    </nav>
+  </div>
+</header>
+
+<!-- Filters panel -->
+<section class="panel" id="filterPanel">
+  <div class="filters">
+    <select id="fCategory" class="select">
+      <option value="">Category</option>
+    </select>
+    <select id="fAward" class="select">
+      <option value="">Award</option>
+    </select>
+    <select id="fTeam" class="select">
+      <option value="">Team</option>
+    </select>
+  </div>
+  <div class="stats">
+    <div>Rows: <strong id="rowCount">0</strong></div>
+    <div>Total Earnings: <strong id="totalE">$0.00</strong></div>
+    <div>Last updated: <span id="stamp">—</span></div>
+  </div>
+</section>
+
+<!-- Desktop table -->
+<div class="table-wrap">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th class="col-A sortable" data-key="Category"><span>Category</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+        <th class="col-B sortable" data-key="Award"><span>Award</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+        <th class="col-C sortable" data-key="Team"><span>Team</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+        <th class="col-D sortable" data-key="Qty"><span>Qty</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+        <th class="col-E sortable" data-key="Prize"><span>Prize</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+        <th class="col-F sortable" data-key="Earnings"><span>Earnings</span> <span class="sort-icon" aria-hidden="true">↕</span></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Mobile cards -->
+<div class="cards" id="cards"></div>
+
+<script>
+/* =========================
+   Config
+========================= */
+const SHEET_ID = "1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo";
+const TAB_NAME = "payouts";
+const RANGE    = "A1:F300";  // Category, Award, Team, Qty, Prize, Earnings
+const TEAM_IMG_BASE = "Images/teams/";
+
+/* =========================
+   Helpers
+========================= */
+const $ = s => document.querySelector(s);
+const fmtMoney = n => (Number(n)||0).toLocaleString(undefined,{style:"currency",currency:"USD"});
+const parseMoney = v => Number(String(v??"").replace(/[^0-9.-]/g,""))||0;
+const slug = s => String(s||"").toLowerCase().replace(/&/g,"and").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+const realTeam = t => !!t && String(t).trim().toLowerCase()!=="no team";
+const cleanText = s => String(s||"").replace(/\u00A0/g," ").replace(/\s+/g," ").trim();
+
+function imgTagFor(team){
+  if(!team) return "";
+  const base = TEAM_IMG_BASE + slug(team);
+  const png  = base + ".png";
+  const svg  = base + ".svg";
+  return `<img class="team-logo" src="${png}" data-src-svg="${svg}" alt="${team}"
+    onerror="if(!this.dataset.svgTried){this.dataset.svgTried=1; this.src=this.dataset.srcSvg;} else {this.style.display='none';}">`;
+}
+function chipFor(cat){
+  const c = String(cat||"").toLowerCase();
+  if (c.includes("weekly")) return `<span class="chip week">Weekly Winners</span>`;
+  if (c.includes("non") && c.includes("playoff")) return `<span class="chip non">Non Playoff Team</span>`;
+  if (c.includes("playoff")) return `<span class="chip play">Playoff Team</span>`;
+  return `<span class="chip non">Non Playoff Team</span>`;
+}
+
+/* =========================
+   Theme
+========================= */
+function updateThemeBtn(){
+  const dark = document.body.classList.contains("dark");
+  document.documentElement.classList.toggle("dark", dark);
+  $("#themeBtn").setAttribute("aria-pressed", dark ? "true" : "false");
+  $("#themeLbl").textContent = dark ? "Light Mode" : "Dark Mode";
+  $("#themeBtn .ico").textContent = dark ? "☀️" : "🌙";
+}
+(function initTheme(){
+  if(localStorage.getItem("ss_theme")==="dark") document.body.classList.add("dark");
+  updateThemeBtn();
+})();
+$("#themeBtn").addEventListener("click", ()=>{
+  const next = !document.body.classList.contains("dark");
+  document.body.classList.toggle("dark", next);
+  localStorage.setItem("ss_theme", next?"dark":"light");
+  updateThemeBtn();
+});
+
+/* =========================
+   View toggle (Desktop/Mobile)
+========================= */
+function updateViewLabel(){
+  const onPhone = window.matchMedia("(max-width:900px)").matches;
+  const forcingDesktop = document.body.classList.contains("force-desktop");
+  const forcingMobile  = document.body.classList.contains("force-mobile");
+  const showingCards = (onPhone && !forcingDesktop) || (!onPhone && forcingMobile);
+  $("#viewLbl").textContent = showingCards ? "Desktop View" : "Mobile View";
+}
+(function initView(){
+  const saved = localStorage.getItem("payouts_view")||"auto";
+  if(saved==="desktop") document.body.classList.add("force-desktop");
+  if(saved==="mobile")  document.body.classList.add("force-mobile");
+  updateViewLabel();
+})();
+$("#viewBtn").addEventListener("click", ()=>{
+  const onPhone = window.matchMedia("(max-width:900px)").matches;
+  if(onPhone){
+    const fd = document.body.classList.toggle("force-desktop");
+    localStorage.setItem("payouts_view", fd ? "desktop" : "auto");
+    if(fd){ showLandscapePrompt(); }  // show when enabling Desktop View on phone
+  }else{
+    const fm = document.body.classList.toggle("force-mobile");
+    localStorage.setItem("payouts_view", fm ? "mobile" : "auto");
+  }
+  updateViewLabel();
+});
+window.addEventListener("resize", updateViewLabel);
+
+/* =========================
+   Fetch + Normalize
+========================= */
+async function fetchGViz(sheetId, tab, range){
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?`+
+              new URLSearchParams({sheet:tab, range});
+  const res = await fetch(url, {cache:"no-store"});
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const txt = await res.text();
+  const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+  return json;
+}
+function parseGViz(json){
+  const cols = (json.table.cols||[]).map(c=> (c.label||c.id||"").trim());
+  const rows = (json.table.rows||[]).map(r=>{
+    const o={}; (r.c||[]).forEach((cell,i)=>o[cols[i]||("c"+i)] = cell ? (cell.f ?? cell.v) : "");
+    return o;
+  });
+  return rows;
+}
+function normalize(rows){
+  return rows.map(r=>({
+    Category: cleanText(r["Category"] ?? r["A"] ?? ""),
+    Award:    cleanText(r["Award"]    ?? r["B"] ?? ""),
+    Team:     cleanText(r["Team"]     ?? r["C"] ?? ""),
+    Qty:      Number(r["Qty"]         ?? r["D"] ?? 0),
+    Prize:    parseMoney(r["Prize"]   ?? r["E"]),
+    Earnings: parseMoney(r["Earnings"]?? r["F"])
+  }));
+}
+
+/* =========================
+   State
+========================= */
+let RAW = [];
+// default sort: Category Z->A
+let STATE = {cat:"", award:"", team:"", sortKey:"Category", sortDir:"desc"};
+
+/* =========================
+   Filters
+========================= */
+function fillFilters(){
+  const rows = RAW.slice();
+  const uniq = arr => [...new Set(arr.filter(Boolean))];
+
+  const cats = uniq(rows.map(r=>r.Category));
+  $("#fCategory").innerHTML = `<option value="">Category</option>`+
+    cats.sort((a,b)=>a.localeCompare(b)).map(v=>`<option ${STATE.cat===v?"selected":""}>${v}</option>`).join("");
+
+  let awardPool = rows;
+  if(STATE.cat) awardPool = awardPool.filter(r=>r.Category===STATE.cat);
+  const awards = uniq(awardPool.map(r=>r.Award));
+  $("#fAward").innerHTML = `<option value="">Award</option>`+
+    awards.sort((a,b)=>a.localeCompare(b)).map(v=>`<option ${STATE.award===v?"selected":""}>${v}</option>`).join("");
+
+  let teamPool = awardPool;
+  if(STATE.award) teamPool = teamPool.filter(r=>r.Award===STATE.award);
+  const teams = uniq(teamPool.map(r=>r.Team)).filter(t=>t);
+  $("#fTeam").innerHTML = `<option value="">Team</option>`+
+    teams.sort((a,b)=>a.localeCompare(b)).map(v=>`<option ${STATE.team===v?"selected":""}>${v}</option>`).join("");
+}
+function applyFilters(rows){
+  return rows.filter(r =>
+    (!STATE.cat   || r.Category===STATE.cat) &&
+    (!STATE.award || r.Award===STATE.award) &&
+    (!STATE.team  || r.Team===STATE.team)
+  );
+}
+function sortRows(rows){
+  const k=STATE.sortKey, d=STATE.sortDir==="asc"?1:-1;
+  return rows.slice().sort((a,b)=>{
+    let A=a[k], B=b[k];
+    if(k==="Qty"||k==="Prize"||k==="Earnings"){ A=Number(A)||0; B=Number(B)||0; return (A-B)*d; }
+    return String(A).localeCompare(String(B),undefined,{numeric:true,sensitivity:"base"})*d;
+  });
+}
+
+/* =========================
+   SPECIAL MODE: Phone + Desktop View
+   - Collapse specific awards
+========================= */
+function isPhoneForcedDesktop(){
+  return window.matchMedia("(max-width:900px)").matches &&
+         document.body.classList.contains("force-desktop");
+}
+function transformForPhoneDesktop(rows){
+  if(!isPhoneForcedDesktop()) return rows;
+
+  const out = [];
+  const used = new Set();
+  const GROUPS = [
+    { re:/playoff\s*qualifier/i,              fixedEarnings:390, qtyMode:"sum" },
+    { re:/most\s*pts?\s*win\s*\(team\)/i,     fixedEarnings:140, qtyMode:"fixed", qtyFixed:14 },
+    { re:/most\s*points?\s*loss\s*\(team\)/i, fixedEarnings:140, qtyMode:"fixed", qtyFixed:14 },
+    { re:/most\s*pts?\s*\(player\)/i,         fixedEarnings:140, qtyMode:"fixed", qtyFixed:14 },
+  ];
+
+  GROUPS.forEach(g=>{
+    const matches = rows.filter(r => g.re.test(r.Award));
+    if(matches.length){
+      const r0 = matches[0];
+      const qty = (g.qtyMode === "fixed")
+        ? g.qtyFixed
+        : matches.reduce((s,r)=> s + (Number(r.Qty)||0), 0);
+
+      out.push({
+        Category: r0.Category,
+        Award:    r0.Award.trim(),
+        Team:     "",
+        Qty:      qty,
+        Prize:    r0.Prize,
+        Earnings: g.fixedEarnings
+      });
+      matches.forEach(m => used.add(m));
+    }
+  });
+
+  rows.forEach(r => { if(!used.has(r)) out.push(r); });
+  return out;
+}
+
+/* =========================
+   Render: Table
+========================= */
+function renderTable(){
+  const tbody = $("#tbl tbody"); 
+  tbody.innerHTML = "";
+
+  let rows = sortRows(applyFilters(RAW));
+  rows = transformForPhoneDesktop(rows);
+  rows = sortRows(rows);  // re-sort after transform
+
+  $("#rowCount").textContent = rows.length.toLocaleString();
+  const tot = rows.reduce((s,r)=> s + (Number(r.Earnings)||0), 0);
+  $("#totalE").textContent = fmtMoney(tot);
+
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="col-A">${chipFor(r.Category)}</td>
+      <td class="col-B">${r.Award}</td>
+      <td class="col-C"><div class="team-cell">${imgTagFor(r.Team)}<span>${r.Team||""}</span></div></td>
+      <td class="col-D">${r.Qty||0}</td>
+      <td class="col-E">${fmtMoney(r.Prize)}</td>
+      <td class="col-F"><span class="money">${fmtMoney(r.Earnings)}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* =========================
+   Render: Mobile Cards
+========================= */
+function renderCards(){
+  const box = $("#cards"); box.innerHTML = "";
+  const rows = sortRows(applyFilters(RAW)).filter(r=> realTeam(r.Team));
+  const map = new Map();
+  rows.forEach(r=>{
+    const key=r.Team;
+    if(!map.has(key)) map.set(key,[]);
+    map.get(key).push(r);
+  });
+  const teams = [...map.keys()].sort((a,b)=>a.localeCompare(b));
+  teams.forEach(team=>{
+    const items = map.get(team);
+    const total = items.reduce((s,r)=> s + (Number(r.Earnings)||0), 0);
+    const card = document.createElement("article");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-head">
+        ${imgTagFor(team)} <span>${team}</span>
+        <span class="money">${fmtMoney(total)}</span>
+      </div>
+      ${items.map(it=>`
+        <div class="line">
+          ${chipFor(it.Category)}
+          <span class="award">${it.Award}</span>
+          <span class="qty">×${it.Qty||0}</span>
+          <span class="money">${fmtMoney(it.Earnings)}</span>
+        </div>
+      `).join("")}
+    `;
+    box.appendChild(card);
+  });
+}
+
+/* =========================
+   Sorting handlers
+========================= */
+document.querySelectorAll("th.sortable").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if(STATE.sortKey===key){ STATE.sortDir = (STATE.sortDir==="asc" ? "desc" : "asc"); }
+    else { STATE.sortKey=key; STATE.sortDir=(key==="Category"||key==="Award"||key==="Team")?"asc":"desc"; }
+    document.querySelectorAll("th.sortable").forEach(t=>t.classList.remove("sorted-asc","sorted-desc"));
+    th.classList.add(STATE.sortDir==="asc"?"sorted-asc":"sorted-desc");
+    renderTable(); renderCards();
+  });
+});
+
+/* =========================
+   CSV of visible rows (kept for parity)
+========================= */
+document.getElementById("csvBtn")?.addEventListener("click", ()=>{
+  let rows = sortRows(applyFilters(RAW));
+  rows = transformForPhoneDesktop(rows);
+  rows = sortRows(rows);
+  const headers = ["Category","Award","Team","Qty","Prize","Earnings"];
+  const esc = v => `"${String(v??"").replace(/"/g,'""')}"`;
+  const lines = [headers.map(esc).join(",")];
+  for(const r of rows){
+    lines.push([r.Category,r.Award,r.Team,r.Qty,fmtMoney(r.Prize),fmtMoney(r.Earnings)].map(esc).join(","));
+  }
+  const blob = new Blob([lines.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="payouts.csv"; a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+/* =========================
+   Reset page
+========================= */
+$("#resetBtn").addEventListener("click", ()=>{
+  STATE = {cat:"", award:"", team:"", sortKey:"Category", sortDir:"desc"};
+  $("#fCategory").value=""; $("#fAward").value=""; $("#fTeam").value="";
+  fillFilters(); renderTable(); renderCards();
+});
+
+/* =========================
+   Filter events
+========================= */
+$("#fCategory").addEventListener("change", e=>{
+  STATE.cat = e.target.value || "";
+  STATE.award = ""; STATE.team="";
+  fillFilters(); renderTable(); renderCards();
+});
+$("#fAward").addEventListener("change", e=>{
+  STATE.award = e.target.value || "";
+  STATE.team = "";
+  fillFilters(); renderTable(); renderCards();
+});
+$("#fTeam").addEventListener("change", e=>{
+  STATE.team = e.target.value || "";
+  renderTable(); renderCards();
+});
+
+/* =========================
+   Load
+========================= */
+async function load(){
+  const json = await fetchGViz(SHEET_ID, TAB_NAME, RANGE);
+  RAW = normalize(parseGViz(json)).filter(r=> r.Category || r.Award || r.Team);
+  $("#stamp").textContent = new Date().toLocaleString();
+  fillFilters(); renderTable(); renderCards();
+}
+load();
+
+/* =========================
+   Landscape modal — robust handlers
+========================= */
+function showLandscapePrompt(){
+  // To show ONLY once per browser, uncomment the next 3 lines:
+  // if (localStorage.getItem("ss_landscape_seen") === "1") return;
+  // localStorage.setItem("ss_landscape_seen","1");
+  // (end once-only)
+
+  const m = document.getElementById("turnPhoneModal");
+  if(!m) return;
+  m.style.display = "flex";
+  setTimeout(()=> document.getElementById("tpOk")?.focus(), 0);
+}
+
+// close on OK (delegated)
+document.addEventListener("click", (e)=>{
+  if(e.target && e.target.id === "tpOk"){
+    document.getElementById("turnPhoneModal").style.display = "none";
+  }
+});
+// close on backdrop tap
+document.addEventListener("click", (e)=>{
+  if(e.target && e.target.id === "turnPhoneModal"){
+    document.getElementById("turnPhoneModal").style.display = "none";
+  }
+});
+// close on Esc
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){
+    const m = document.getElementById("turnPhoneModal");
+    if(m && m.style.display !== "none"){ m.style.display = "none"; }
+  }
+});
+</script>
+
+<!-- iOS rotate prompt -->
+<div id="turnPhoneModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tp-title">
+  <div class="modal" role="document">
+    <div class="rotate" aria-hidden="true">🔄</div>
+    <h3 id="tp-title">Best in Landscape Mode</h3>
+    <div class="actions">
+      <button class="pill" id="tpOk" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
