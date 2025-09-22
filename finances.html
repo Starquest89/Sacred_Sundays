@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sacred Sundays — Finances</title>
+
+<style>
+/* =====================
+   Theme Tokens (tweak freely)
+===================== */
+:root{
+  --bg:#f1f5f9; --text:#111827; --muted:#6b7280; --border:#e5e7eb;
+  --brand:#1e2a38; --band:#2c3e50; --hover:#f8fafc; --accent:#3498db;
+
+  /* cards (mobile) */
+  --card-odd:#ffffff;
+  --card-even:#ffffff;         /* alternating background like Standings */
+  --card-expanded:#ffffff;     /* expanded card background */
+  --details-bg:#efefef;        /* expanded details panel background */
+
+  /* pills (status & balance) */
+  --pill-paid-bg:#e6f7ed; --pill-paid-text:#0f5132;  /* green */
+  --pill-owed-bg:#fdecea; --pill-owed-text:#842029;  /* red   */
+  --pill-neutral-bg:var(--hover); --pill-neutral-text:var(--text);
+}
+body.dark{
+  --bg:#707070; --text:#e5e7eb; --muted:#94a3b8; --border:#1f2937;
+  --brand:#0b1220; --band:#111a2e; --hover:#0c1529; --accent:#60a5fa;
+
+  --card-odd:#0f172a;
+  --card-even:#0f172a;
+  --card-expanded:#101a33;
+  --details-bg:#000000;
+
+  --pill-paid-bg:#0f2a1e; --pill-paid-text:#b7f7d1;
+  --pill-owed-bg:#2a1616; --pill-owed-text:#f5a3a3;
+  --pill-neutral-bg:#111827; --pill-neutral-text:#e5e7eb;
+}
+
+/* =====================
+   Base
+===================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial}
+a{color:inherit;text-decoration:none}
+
+/* Header (matches other pages) */
+header{background:var(--brand);color:#fff}
+.bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:center;padding:14px 12px;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:28px;letter-spacing:.2px}
+
+/* Pills */
+.pill-group{display:flex;gap:12px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;height:44px;padding:10px 16px;border:2px dashed rgba(255,255,255,.55);border-radius:9999px;color:#fff;background:transparent;font-weight:700;cursor:pointer;transition:background .15s}
+button.pill{appearance:none;background:transparent}
+.pill:hover{background:rgba(255,255,255,.07)}
+.pill .ico{font-size:18px;line-height:1;display:inline-block;width:1.1em;text-align:center}
+@media (max-width:480px){.pill-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}.pill{justify-content:center}}
+
+/* Containers */
+.wrap{max-width:1100px;margin:16px auto;padding:0 12px}
+.panel{background:var(--card-odd);border:1px solid var(--border);border-radius:14px;padding:12px}
+
+/* Summary */
+.summary{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin:6px 0 0;color:var(--muted);font-weight:600}
+.summary strong{color:var(--text)}
+.note{font-size:12px;color:var(--muted)}
+
+/* Desktop table */
+.table-wrap{margin-top:12px;overflow:auto;position:relative}
+table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card-odd);min-width:720px}
+thead th{background:var(--band);color:#fff;position:sticky;top:0;z-index:2;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+th,td{padding:14px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}
+tbody tr{background:transparent}
+tbody tr:hover{background:var(--hover)}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable .arrow{opacity:.6;margin-left:6px}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* =====================
+   Mobile Cards (strict rows/columns)
+===================== */
+.m-cards{display:none;margin-top:12px}
+.m-card{
+  position:relative;
+  border:1px solid var(--border); border-radius:12px;
+  padding:12px 12px 56px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,.04);
+  transition:background-color .2s ease, border-color .2s ease;
+}
+.m-cards .m-card:nth-child(odd){ background:var(--card-odd); }
+.m-cards .m-card:nth-child(even){ background:var(--card-even); }
+.m-card.expanded{ background:var(--card-expanded) !important; border-color:color-mix(in srgb, var(--border) 70%, transparent) }
+
+/* Row 1: Team | "League Fee:" + Status */
+.m-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-team{font-weight:800;font-size:clamp(13px,3.8vw,16px);line-height:1.1;max-width:62%}
+.m-team.long{font-size:clamp(12px,3.4vw,15px)}
+.m-right{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.m-right .lbl{font-size:12px;color:var(--muted);font-weight:700}
+.m-status{
+  font-weight:800;font-size:12px;padding:6px 10px;border-radius:9999px;border:1px solid transparent;white-space:nowrap
+}
+.status-paid{ background:var(--pill-paid-bg); color:var(--pill-paid-text); }
+.status-owed{ background:var(--pill-owed-bg); color:var(--pill-owed-text); }
+.status-neutral{ background:var(--pill-neutral-bg); color:var(--pill-neutral-text); border:1px solid var(--border); }
+
+/* Row 2: 3 equal columns; headings above values */
+.m-line{margin-top:10px}
+.m-grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(84px, 1fr));
+  gap:8px 12px;
+  align-items:start;
+}
+@media (max-width:360px){ .m-grid{ grid-template-columns: repeat(2, minmax(84px, 1fr)); } }
+.m-h{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.m-val{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px}
+
+/* Balance pill */
+.bal-pill{ display:inline-block; padding:4px 10px; border-radius:9999px; font-weight:800; font-size:14px }
+.bal-ok{  background:var(--pill-paid-bg); color:var(--pill-paid-text); }
+.bal-neg{ background:var(--pill-owed-bg); color:var(--pill-owed-text); }
+
+/* Expand/Collapse pill (bottom-left now) */
+.m-actions{position:absolute; left:12px; bottom:12px}
+.btn-expand{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9999px;
+  border:1px dashed var(--border); background:var(--hover); color:var(--text); font-weight:800; cursor:pointer;
+}
+.btn-expand:hover{filter:brightness(0.98)}
+
+/* Details (two table-like sections) */
+.m-details{margin-top:12px;padding:12px;border-top:1px dashed var(--border);border-radius:10px;background:transparent;transition:background-color .2s ease}
+.m-card.expanded .m-details{ background:var(--details-bg); }
+.m-row{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(84px, 1fr));
+  gap:8px 12px;
+}
+.m-row + .m-row{margin-top:6px}
+@media (max-width:360px){ .m-row{ grid-template-columns: repeat(2, minmax(84px, 1fr)); } }
+.m-row .k{font-size:11px;color:var(--muted);font-weight:700}
+.m-row .v{font-size:15px;color:var(--text);font-weight:700}
+.m-details[hidden]{display:none}
+
+/* Switch to cards on mobile */
+@media (max-width:900px){
+  .table-wrap{display:none}
+  .m-cards{display:block}
+}
+
+/* Status message & footer */
+.status{padding:8px 12px;border-radius:10px;margin-top:8px;border:1px solid transparent;display:none}
+.status.err{display:block;background:#fee2e2;color:#991b1b;border-color:#fecaca}
+footer{max-width:1100px;margin:24px auto 40px;padding:0 12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.views{display:flex;align-items:center;gap:8px}
+.views .bubble{background:var(--card-odd);border:1px solid var(--border);padding:6px 10px;border-radius:9999px;font-weight:800;color:var(--text)}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>💲 Finances</h1>
+    <div class="pill-group">
+      <a href="index.html" id="homeBtn" class="pill"><span class="ico">🏠</span>Home</a>
+      <button id="resetBtn" class="pill" type="button"><span class="ico">↻</span>Reset Page</button>
+      <button id="csvBtn"   class="pill" type="button"><span class="ico">⬇️</span>CSV</button>
+      <button id="themeBtn" class="pill" type="button" aria-pressed="false" aria-label="Toggle color theme"><span class="ico">🌙</span><span id="themeLbl">Dark Mode</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="panel">
+    <div class="summary">
+      <div>Rows: <strong id="rows">0</strong></div>
+      <div id="totals"></div>
+      <div class="note" id="stamp"></div>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="panel table-wrap">
+    <table id="tbl" aria-describedby="rows">
+      <thead><tr id="thead-row"></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="m-cards" id="mobile-cards"></div>
+</main>
+
+<footer>
+  <div class="views"><span>Views:</span> <span class="bubble" id="page-views">—</span></div>
+  <div>© <span id="yr"></span> Sacred Sundays</div>
+</footer>
+
+<script>
+/**********************
+ * Config
+ **********************/
+const SHEET_ID = '1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo';
+const GID      = '971991586';
+const RANGE    = 'A1:I14';
+const CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}&range=${encodeURIComponent(RANGE)}`;
+
+/**********************
+ * Theme
+ **********************/
+function updateThemeBtn(){
+  const dark = document.body.classList.contains('dark');
+  document.documentElement.classList.toggle('dark', dark);
+  const btn = document.getElementById('themeBtn'); if(btn) btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+  const lbl = document.getElementById('themeLbl'); if(lbl) lbl.textContent = dark ? 'Light Mode' : 'Dark Mode';
+  const ico = document.querySelector('#themeBtn .ico'); if(ico) ico.textContent = dark ? '☀️' : '🌙';
+}
+(function initTheme(){
+  const saved = localStorage.getItem('ss_theme');
+  if(saved === 'dark') document.body.classList.add('dark');
+  updateThemeBtn();
+})();
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  const next = !document.body.classList.contains('dark');
+  document.body.classList.toggle('dark', next);
+  localStorage.setItem('ss_theme', next ? 'dark' : 'light');
+  updateThemeBtn();
+});
+
+/**********************
+ * CSV parse
+ **********************/
+function parseCSV(text){
+  const rows=[]; let row=[]; let cur=''; let inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i], n=text[i+1];
+    if(inQ){
+      if(c==='"'){ if(n==='"'){cur+='"'; i++;} else { inQ=false; } }
+      else cur+=c;
+    }else{
+      if(c==='"'){ inQ=true; }
+      else if(c===','){ row.push(cur); cur=''; }
+      else if(c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if(c==='\r'){ /* ignore */ }
+      else { cur+=c; }
+    }
+  }
+  if(cur.length>0 || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.length && !(r.length===1 && r[0]===''));
+}
+const isNumeric = v => typeof v==='string' && v.replace(/[$,()%\s]/g,'')!=='' && !isNaN(Number(v.replace(/[$,()%\s]/g,'')));
+const toNumber = v => Number(String(v||'').replace(/[$,,%\s]/g,'') || 0);
+const toUSD = n => Number(n).toLocaleString(undefined,{style:'currency',currency:'USD'});
+
+/**********************
+ * State + table (desktop)
+ **********************/
+let DATA = { headers: [], rows: [] };
+let SORT = { idx: 0, dir: 'asc' };
+
+function headerIndex(nameCandidates){
+  const lower = DATA.headers.map(h => String(h||'').trim().toLowerCase());
+  for(const cand of nameCandidates){
+    const i = lower.indexOf(cand.toLowerCase());
+    if(i!==-1) return i;
+  }
+  return -1;
+}
+
+function buildTable(){
+  const theadRow = document.getElementById('thead-row');
+  const tbody    = document.getElementById('tbody');
+  theadRow.innerHTML = '';
+  tbody.innerHTML = '';
+
+  DATA.headers.forEach((h, i)=>{
+    const th = document.createElement('th');
+    th.textContent = h || '';
+    th.className = 'sortable';
+    th.dataset.idx = i;
+    th.innerHTML = `${h || ''} <span class="arrow"></span>`;
+    th.addEventListener('click', ()=>{
+      if(SORT.idx === i){ SORT.dir = (SORT.dir==='asc'?'desc':'asc'); } else { SORT.idx = i; SORT.dir = 'asc'; }
+      renderBody();
+    });
+    theadRow.appendChild(th);
+  });
+
+  renderBody();
+}
+
+function renderBody(){
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  const idx = SORT.idx; const dir = SORT.dir;
+  const rows = DATA.rows.slice().sort((a,b)=>{
+    const A=a[idx] ?? '', B=b[idx] ?? '';
+    const nA=isNumeric(A)?Number(A.replace(/[$,()%\s]/g,'')):NaN;
+    const nB=isNumeric(B)?Number(B.replace(/[$,()%\s]/g,'')):NaN;
+    const bothNum = !Number.isNaN(nA) && !Number.isNaN(nB);
+    if(bothNum) return dir==='asc' ? (nA-nB) : (nB-nA);
+    return dir==='asc'
+      ? String(A).localeCompare(String(B),undefined,{numeric:true,sensitivity:'base'})
+      : String(B).localeCompare(String(A),undefined,{numeric:true,sensitivity:'base'});
+  });
+
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    r.forEach((v,i)=>{
+      const td=document.createElement('td');
+      td.textContent = v ?? '';
+      td.dataset.col = DATA.headers[i] || `Col ${i+1}`;
+      if(isNumeric(v)) td.classList.add('num');
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('rows').textContent = rows.length.toLocaleString();
+  document.getElementById('stamp').textContent = 'Last Page Refresh: ' + new Date().toLocaleString();
+  renderTotals();
+  renderMobileCards();
+}
+
+/**********************
+ * Mobile cards
+ **********************/
+function renderMobileCards(){
+  const list = document.getElementById('mobile-cards');
+  if(!list) return;
+  list.innerHTML = '';
+
+  /* tolerant header matching */
+  const iTeam    = headerIndex(['team']);
+  const iStatus  = headerIndex(['league fee status','dues status','status','status:']);
+  const iFee     = headerIndex(['league fee','fee']);
+  const iEarn    = headerIndex(['earnings','payouts','amount earned']);
+  const iFeeDt   = headerIndex(['fee paid date','date paid','paid date']);
+  const iFeeTo   = headerIndex(['fee paid to','paid to']);
+  const iFeeMet  = headerIndex(['payment method','fee payment method']);         // first payment method
+  const iEarnDt  = headerIndex(['earnings paid date','earning paid date']);
+  const iEarnMet = headerIndex(['payment method (earnings)','earnings payment method','earning payment method','payment method 2']);
+
+  DATA.rows.forEach((row, idx)=>{
+    const team     = row[iTeam]   ?? '';
+    const statusTx = (row[iStatus] ?? '').toString().trim();
+    const fee      = toNumber(row[iFee]);
+    const earn     = toNumber(row[iEarn]);
+    const balance  = earn - fee;
+
+    const feeDt  = row[iFeeDt]  || '—';
+    const feeTo  = row[iFeeTo]  || '—';
+    const feeMet = row[iFeeMet] || '—';
+    const earnDt = row[iEarnDt] || '—';
+    const earnMet= row[iEarnMet]|| '—';
+
+    let statusClass = 'status-neutral';
+    const s = statusTx.toLowerCase();
+    if(s.includes('paid in full')) statusClass = 'status-paid';
+    else if(s.includes('owed') || s.includes('unpaid')) statusClass = 'status-owed';
+
+    const balClass = balance < 0 ? 'bal-neg' : 'bal-ok';
+
+    const card = document.createElement('div');
+    card.className = 'm-card';
+    card.setAttribute('aria-expanded','false');
+
+    /* Row 1 */
+    const top = document.createElement('div');
+    top.className = 'm-top';
+    const teamEl = document.createElement('div');
+    teamEl.className = 'm-team' + (team.length>20 ? ' long':'');
+    teamEl.textContent = team || '—';
+    const right = document.createElement('div');
+    right.className = 'm-right';
+    right.innerHTML = `<span class="lbl">League Fee:</span><span class="m-status ${statusClass}">${statusTx || '—'}</span>`;
+    top.appendChild(teamEl); top.appendChild(right);
+
+    /* Row 2 */
+    const line = document.createElement('div');
+    line.className = 'm-line';
+    line.innerHTML = `
+      <div class="m-grid">
+        <div><div class="m-h">League Fee</div><div class="m-val">${toUSD(fee)}</div></div>
+        <div><div class="m-h">Earnings</div><div class="m-val">${toUSD(earn)}</div></div>
+        <div><div class="m-h">Balance</div><div class="m-val"><span class="bal-pill ${balClass}">${toUSD(balance)}</span></div></div>
+      </div>
+    `;
+
+    /* Details */
+    const details = document.createElement('div');
+    details.className = 'm-details';
+    details.hidden = true;
+
+    const rowH1 = document.createElement('div'); rowH1.className = 'm-row';
+    rowH1.innerHTML = `<div class="k">Fee Paid Date:</div><div class="k">Paid To:</div><div class="k">Payment Method:</div>`;
+    const rowV1 = document.createElement('div'); rowV1.className = 'm-row';
+    rowV1.innerHTML = `<div class="v">${feeDt}</div><div class="v">${feeTo}</div><div class="v">${feeMet}</div>`;
+
+    const rowH2 = document.createElement('div'); rowH2.className = 'm-row';
+    rowH2.innerHTML = `<div class="k">Earnings Paid Date:</div><div class="k">Payment Method:</div><div></div>`;
+    const rowV2 = document.createElement('div'); rowV2.className = 'm-row';
+    rowV2.innerHTML = `<div class="v">${earnDt}</div><div class="v">${earnMet}</div><div></div>`;
+
+    details.appendChild(rowH1); details.appendChild(rowV1);
+    details.appendChild(rowH2); details.appendChild(rowV2);
+
+    /* Expand/Collapse (bottom-left) */
+    const actions = document.createElement('div');
+    actions.className = 'm-actions';
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'btn-expand'; btn.textContent = 'Details';
+    btn.addEventListener('click', ()=>{
+      const expanded = card.classList.toggle('expanded');
+      details.hidden = !expanded;
+      btn.textContent = expanded ? 'Collapse' : 'Expand';
+      card.setAttribute('aria-expanded', String(expanded));
+    });
+    actions.appendChild(btn);
+
+    card.appendChild(top);
+    card.appendChild(line);
+    card.appendChild(details);
+    card.appendChild(actions);
+    list.appendChild(card);
+  });
+}
+
+/**********************
+ * Totals (quick heuristic)
+ **********************/
+function renderTotals(){
+  const totalsEl = document.getElementById('totals');
+  if(!DATA.headers.length){ totalsEl.textContent=''; return; }
+  const moneyHints = /(amount|due|dues|paid|balance|payout|earning|fee|total)/i;
+  const sums=[];
+  DATA.headers.forEach((h, i)=>{
+    const colVals = DATA.rows.map(r=>r[i]).filter(Boolean);
+    const numericVals = colVals.map(v=>isNumeric(v)?Number(v.replace(/[$,()%\s]/g,'')):NaN).filter(n=>!Number.isNaN(n));
+    const mostlyNumeric = numericVals.length >= Math.max(3, Math.floor(colVals.length*0.6));
+    if(moneyHints.test(h) || mostlyNumeric){
+      const sum = numericVals.reduce((s,n)=>s+n,0);
+      if(sum!==0) sums.push({h, sum});
+    }
+  });
+  totalsEl.innerHTML = sums.length
+    ? 'Totals: ' + sums.slice(0,3).map(s=>`<strong>${s.h}:</strong> ${toUSD(s.sum)}`).join(' · ')
+    : '';
+}
+
+/**********************
+ * CSV / Reset / Boot
+ **********************/
+function downloadCSV(){
+  const headers = DATA.headers;
+  const rows = Array.from(document.querySelectorAll('#tbody tr')).map(tr=>
+    Array.from(tr.children).map(td=>td.textContent)
+  );
+  const esc = v => '"'+String(v??'').replace(/"/g,'""')+'"';
+  const lines = [headers.map(esc).join(','), ...rows.map(r=>r.map(esc).join(','))];
+  const blob = new Blob([lines.join('\r\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finances.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function resetPage(){
+  SORT = { idx: 0, dir: 'asc' };
+  fetchAndRender();
+}
+
+async function fetchAndRender(){
+  const status = document.getElementById('status');
+  status.className='status'; status.style.display='none'; status.textContent='';
+  try{
+    const res = await fetch(CSV_URL, {cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const csv = await res.text();
+    const rows = parseCSV(csv);
+    if(!rows.length) throw new Error('No data returned');
+    DATA.headers = rows[0];
+    DATA.rows    = rows.slice(1).filter(r=>r.some(cell=>String(cell||'').trim()!==''));
+    buildTable();
+    renderMobileCards();
+  }catch(err){
+    status.className='status err';
+    status.textContent = '⚠️ Unable to load data. Make sure the sheet/range is shared publicly (Viewer). ' + (err && err.message ? `(${err.message})` : '');
+    console.error(err);
+  }
+}
+
+/* Wire + Footer + Views */
+document.getElementById('csvBtn').addEventListener('click', downloadCSV);
+document.getElementById('resetBtn').addEventListener('click', resetPage);
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+(function(){
+  const PAGE_KEY = 'finances';
+  const NAMESPACE = 'sacred-sundays';
+  const el = document.getElementById('page-views');
+  if(!el) return;
+  fetch(`https://api.countapi.xyz/hit/${encodeURIComponent(NAMESPACE)}/${encodeURIComponent(PAGE_KEY)}`)
+    .then(r=>r.json())
+    .then(d=>{ if(d && typeof d.value==='number') el.textContent = d.value.toLocaleString(); })
+    .catch(()=>{
+      const localKey = `views:${PAGE_KEY}`;
+      let n = parseInt(localStorage.getItem(localKey) || '0', 10);
+      n++; localStorage.setItem(localKey, String(n));
+      el.textContent = n.toLocaleString();
+    });
+})();
+
+/* Boot */
+fetchAndRender();
+</script>
+</body>
+</html>
+
+
