@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lifetime Record — Sacred Sundays</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+/* LIGHT THEME (default) */
+:root{
+  --max-width:1100px;
+
+  --bg:#e5edf7;
+  --bg-radial-top:#eef2ff;
+  --bg-radial-mid:#dbeafe;
+  --bg-radial-bottom:#e5e7eb;
+
+  --text:#0f172a;
+  --muted:#6b7280;
+
+  --card:#ffffff;
+  --border:#d1d5db;
+
+  --brand:#0f172a;
+
+  --accent:#16a34a;
+  --accent-soft:rgba(22,163,74,.15);
+
+  --panel:#f9fafb;
+  --panel-strong:#ffffff;
+  --panel-border:#e5e7eb;
+
+  --shadow:0 10px 25px rgba(15,23,42,.18);
+
+  --chart-label:#111827;
+  --playoff-square:#111827; /* playoff boxes in LIGHT mode (black) */
+
+  /* win/loss bar colors (light) */
+  --wl-win-fill:rgba(34,197,94,0.9);
+  --wl-win-border:rgba(22,163,74,1);
+  --wl-loss-fill:rgba(15,23,42,0.15);
+  --wl-loss-border:rgba(15,23,42,0.4);
+}
+
+/* DARK THEME OVERRIDES */
+:root.dark{
+  --bg:#020617;
+  --bg-radial-top:#1f2937;
+  --bg-radial-mid:#020617;
+  --bg-radial-bottom:#020617;
+
+  --text:#e5e7eb;
+  --muted:#9ca3af;
+
+  --card:#020617;
+  --border:#1f2937;
+
+  --brand:#020617;
+
+  --accent:#22c55e;
+  --accent-soft:rgba(34,197,94,.18);
+
+  --panel:#020617;
+  --panel-strong:#020617;
+  --panel-border:#1f2937;
+
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+
+  --chart-label:#ffffff;
+  --playoff-square:#f9fafb; /* playoff boxes in DARK mode (white) */
+
+  /* win/loss bar colors (dark) */
+  --wl-win-fill:rgba(34,197,94,0.9);
+  --wl-win-border:rgba(22,163,74,1);
+  --wl-loss-fill:rgba(249,250,251,0.9);
+  --wl-loss-border:rgba(249,250,251,1);
+}
+
+html,body{height:100%}
+body{
+  margin:0;
+  background:radial-gradient(circle at top, var(--bg-radial-top) 0, var(--bg-radial-mid) 55%, var(--bg-radial-bottom) 100%);
+  color:var(--text);
+  font:16px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+}
+
+/* header */
+header{
+  background:var(--brand);
+  color:#fff;
+  position:sticky;
+  top:0;
+  z-index:1000;
+  box-shadow:0 6px 20px rgba(0,0,0,.6);
+}
+header .wrap{
+  max-width:var(--max-width);
+  margin:0 auto;
+  padding:14px 12px 18px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:12px;
+}
+header h1{
+  margin:0;
+  font-size:clamp(22px,2.4vw,30px);
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  letter-spacing:.2px;
+}
+header h1 span[aria-hidden="true"]{font-size:22px}
+
+.pills{
+  display:flex;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.pill{
+  box-sizing:border-box;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  justify-content:center;
+  min-width:144px;
+  height:42px;
+  padding:8px 14px;
+  border-radius:9999px;
+  border:2px dashed rgba(255,255,255,.55);
+  color:#fff;
+  background:transparent;
+  font-weight:800;
+  line-height:1;
+  text-decoration:none;
+  cursor:pointer;
+  user-select:none;
+  transition:background .15s,transform .08s;
+}
+.pill:hover{ background:rgba(255,255,255,.10); }
+.pill:active{ transform:translateY(1px); }
+.pill .ico{ font-size:18px; }
+
+/* Team filter pill */
+.pill-filter{
+  cursor:default;
+  padding-right:12px;
+}
+.pill-filter select{
+  flex:1;
+  border:none;
+  margin-left:2px;
+  background:transparent;
+  color:#fff;
+  font-weight:800;
+  font-size:14px;
+  outline:none;
+  padding:0;
+  height:100%;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.pill-filter option{
+  color:#000;
+}
+
+@media (max-width:900px){
+  header .wrap{ grid-template-columns:1fr; }
+  .pills{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+  .pill{
+    height:40px;
+    min-width:0;
+    padding:8px 10px;
+    font-size:14px;
+  }
+  header h1{ font-size:20px; justify-content:center; }
+}
+@media (max-width:430px){
+  .pill{
+    height:36px;
+    padding:6px 8px;
+    font-size:13px;
+  }
+}
+
+/* content layout */
+.main-wrap{
+  max-width:var(--max-width);
+  margin:12px auto 28px;
+  padding:0 10px 12px;
+}
+.cards{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* ESPN-style card */
+.card{
+  background:radial-gradient(circle at top left, var(--accent-soft), var(--card));
+  border-radius:18px;
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+  padding:14px 14px 12px;
+  position:relative;
+  overflow:hidden;
+}
+.card::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:radial-gradient(circle at 10% 0, var(--accent-soft) 0, transparent 55%);
+  opacity:.3;
+  pointer-events:none;
+}
+
+/* card header */
+.card-head{
+  position:relative;
+  z-index:1;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:8px;
+}
+.head-main{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.card-head .mgr{
+  font-size:18px;
+  font-weight:900;
+}
+.card-head .subtitle{
+  font-size:12px;
+  font-weight:600;
+  color:var(--muted);
+}
+.head-money{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+}
+.money-pill{
+  padding:4px 10px;
+  border-radius:999px;
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  font-size:13px;
+  font-weight:800;
+}
+.money-caption{
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:700;
+}
+
+/* main stat + chart row */
+.primary-row{
+  position:relative;
+  z-index:1;
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,1.9fr);
+  gap:10px;
+  margin:8px 0 10px;
+}
+@media (max-width:640px){
+  .primary-row{ grid-template-columns:1fr; }
+}
+.big-stat{
+  background:var(--panel);
+  border-radius:14px;
+  padding:10px 12px;
+  border:1px solid var(--panel-border);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.big-stat-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+}
+.big-stat-label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:800;
+}
+.big-stat-rank-label{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:800;
+  text-align:center;
+}
+.big-stat-value{
+  font-size:26px;
+  font-weight:900;
+}
+.big-stat-rank-value{
+  font-size:22px;
+  font-weight:900;
+  text-align:center;
+}
+.big-stat-sub-row{
+  font-size:12px;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+/* chart card */
+.chart-shell{
+  background:var(--panel);
+  border-radius:14px;
+  padding:8px 10px 10px;
+  border:1px solid var(--panel-border);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.chart-header-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.chart-title{
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+}
+
+/* header right: legend + view toggle */
+.chart-header-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+/* playoff legend */
+.legend-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:10px;
+  color:var(--muted);
+}
+.legend-square{
+  width:12px;
+  height:12px;
+  border-radius:2px;
+  border:2px solid var(--playoff-square);
+  box-sizing:border-box;
+}
+
+/* chart pills (per card) – view + range use same styling */
+.chart-view-pill,
+.chart-range-pill{
+  border-radius:999px;
+  border:1px solid var(--accent);
+  background:rgba(15,23,42,.12);
+  color:var(--accent);
+  font-size:10px;
+  font-weight:900;
+  padding:4px 12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.25);
+}
+:root.dark .chart-view-pill,
+:root.dark .chart-range-pill{
+  background:rgba(34,197,94,.18);
+}
+.chart-view-pill:hover,
+.chart-range-pill:hover{
+  background:rgba(34,197,94,.25);
+}
+
+/* sub row: range pill + WL legend */
+.chart-sub-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+/* W/L legend */
+.wl-legend{
+  display:none; /* shown in W/L mode only */
+  align-items:center;
+  gap:8px;
+  font-size:10px;
+  color:var(--muted);
+  flex-wrap:wrap;
+}
+.wl-legend-pair{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.wl-square{
+  width:10px;
+  height:10px;
+  border-radius:2px;
+  box-sizing:border-box;
+}
+.wl-square.wl-win{
+  background-color:var(--wl-win-fill);
+  border:1px solid var(--wl-win-border);
+}
+.wl-square.wl-loss{
+  background-color:var(--wl-loss-fill);
+  border:1px solid var(--wl-loss-border);
+}
+
+/* fixed-size wrapper for chart */
+.chart-shell-inner{
+  position:relative;
+  width:100%;
+  height:150px;
+  overflow:hidden;
+}
+.chart-shell-inner canvas{
+  position:absolute;
+  inset:0;
+  width:100% !important;
+  height:100% !important;
+}
+
+/* stat tiles */
+.stats-grid{
+  position:relative;
+  z-index:1;
+  margin-top:6px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+.stat-tile{
+  background:var(--panel);
+  border-radius:12px;
+  border:1px dashed var(--panel-border);
+  padding:8px 10px 7px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.stat-label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:var(--muted);
+  font-weight:700;
+}
+.stat-value{
+  font-size:14px;
+  font-weight:900;
+}
+.champ-years{
+  font-size:12px;      /* tweak this */
+  font-weight:500;     /* tweak if you want lighter */
+  margin-left:8px;     /* small gap after the number */
+}
+
+
+/* footer */
+.site-footer{
+  background:var(--brand);
+  color:#fff;
+  box-shadow:0 -4px 18px rgba(0,0,0,.7);
+}
+.site-footer .wrap{
+  max-width:var(--max-width);
+  margin:0 auto;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-weight:700;
+  font-size:13px;
+}
+.site-footer .muted{
+  opacity:.85;
+  font-weight:600;
+}
+
+/* hide table view */
+.table-wrap{display:none!important;}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1 class="title"><span aria-hidden="true">📈</span> Lifetime Record</h1>
+    <nav class="pills">
+      <a class="pill" href="index.html"><span class="ico">🏠</span>Home</a>
+      <button id="resetBtn" class="pill" type="button"><span class="ico">🔄</span>Reset Page</button>
+      <button id="themeBtn" class="pill" type="button" aria-pressed="false">
+        <span class="ico">🌙</span><span id="themeLbl">Dark Mode</span>
+      </button>
+      <div class="pill pill-filter">
+        <span class="ico">🎯</span>
+        <select id="teamFilter">
+          <option value="__all__">All Teams</option>
+        </select>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div id="cards" class="cards"></div>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="wrap">
+    <div>🏈 Sacred Sundays — <span class="muted">Lifetime Record</span></div>
+    <div id="viewCounter" aria-label="Page views">Views: <strong id="viewCountN">0</strong></div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const SHEET_ID = '1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo';
+const GID      = '904448849';
+
+const $ = s => document.querySelector(s);
+const clean = v => String(v ?? '').replace(/\u00A0/g,' ').trim();
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+
+let _lrCharts = [];
+let MANAGERS = [];
+const CHART_STATE = {}; // canvasId -> { chart, mode, seasons, range }
+
+/* THEME / CHART COLORS */
+function applyChartThemeColors(){
+  const styles = getComputedStyle(document.documentElement);
+
+  // Axis / label color
+  const tickColor =
+    styles.getPropertyValue('--chart-label').trim() ||
+    (document.body.classList.contains('dark') ? '#ffffff' : '#111827');
+
+  // Current theme’s W/L bar colors
+  const winFill    = styles.getPropertyValue('--wl-win-fill').trim()   || 'rgba(34,197,94,0.9)';
+  const winBorder  = styles.getPropertyValue('--wl-win-border').trim() || 'rgba(22,163,74,1)';
+  const lossFill   = styles.getPropertyValue('--wl-loss-fill').trim()  || 'rgba(15,23,42,0.15)';
+  const lossBorder = styles.getPropertyValue('--wl-loss-border').trim()|| 'rgba(15,23,42,0.4)';
+
+  _lrCharts.forEach(ch => {
+    // Update axis colors
+    if(ch.options?.scales?.x?.ticks){
+      ch.options.scales.x.ticks.color = tickColor;
+    }
+    if(ch.options?.scales?.y?.ticks){
+      ch.options.scales.y.ticks.color = tickColor;
+    }
+    if(ch.options?.scales?.y?.title){
+      ch.options.scales.y.title.color = tickColor;
+    }
+
+    // If this chart is currently in W/L (stacked bar) mode,
+    // update the dataset colors from the CSS variables.
+    if (ch.config.type === 'bar' && Array.isArray(ch.data?.datasets)) {
+      const lossesDs = ch.data.datasets[0]; // Losses
+      const winsDs   = ch.data.datasets[1]; // Wins
+
+      if (lossesDs) {
+        lossesDs.backgroundColor = lossFill;
+        lossesDs.borderColor     = lossBorder;
+      }
+      if (winsDs) {
+        winsDs.backgroundColor = winFill;
+        winsDs.borderColor     = winBorder;
+      }
+    }
+
+    ch.update();
+  });
+}
+
+
+function updateThemeBtn(){
+  const dark = document.body.classList.contains('dark');
+  document.documentElement.classList.toggle('dark', dark);
+  $('#themeBtn').setAttribute('aria-pressed', dark ? 'true' : 'false');
+  $('#themeLbl').textContent = dark ? 'Light Mode' : 'Dark Mode';
+  $('#themeBtn .ico').textContent = dark ? '☀️' : '🌙';
+}
+
+// Default theme: dark unless user chose light
+(function initTheme(){
+  const saved = localStorage.getItem('ss_theme');
+  const useDark = (saved !== 'light');
+  if(useDark){
+    document.body.classList.add('dark');
+  }
+  updateThemeBtn();
+})();
+
+$('#themeBtn').addEventListener('click', () => {
+  const nextDark = !document.body.classList.contains('dark');
+  document.body.classList.toggle('dark', nextDark);
+  localStorage.setItem('ss_theme', nextDark ? 'dark' : 'light');
+  updateThemeBtn();
+  applyChartThemeColors();
+});
+
+$('#resetBtn').addEventListener('click', () => location.reload());
+
+/* CSV fetch */
+async function fetchCsv(sheetId,gid){
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_=${Date.now()}`;
+  const res = await fetch(url,{cache:'no-store'});
+  if(!res.ok) throw new Error('CSV HTTP '+res.status);
+  const text = await res.text();
+
+  const rows=[];let cur='',row=[],inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i],nx=text[i+1];
+    if(inQ){
+      if(ch=='"'&&nx=='"'){cur+='"';i++;}
+      else if(ch=='"'){inQ=false;}
+      else cur+=ch;
+    }else{
+      if(ch=='"') inQ=true;
+      else if(ch==','){row.push(cur);cur='';}
+      else if(ch=='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+      else if(ch!='\r'){cur+=ch;}
+    }
+  }
+  row.push(cur);rows.push(row);
+  return rows;
+}
+
+function findIdx(headers, names){
+  const lowers=headers.map(h=>h.toLowerCase());
+  for(const name of names){
+    const idx=lowers.indexOf(name.toLowerCase());
+    if(idx!==-1) return idx;
+  }
+  return -1;
+}
+
+/* --- helper to parse year and select first/last windows --- */
+function parseYearToFull(s){
+  if(!s) return NaN;
+  let str = String(s).trim();
+  str = str.replace(/^'/,''); // remove leading apostrophe if present
+  let yr = parseInt(str,10);
+  if(!Number.isFinite(yr)) return NaN;
+  if(yr < 100) yr += 2000;    // '06 -> 2006
+  return yr;
+}
+
+/* Build managers with explicit column mapping + playoff sums + wins/losses per year + champ years */
+function buildManagers(csvRows){
+  if(!csvRows.length) return {managers:[],debug:'no rows'};
+
+  let headerIndex = csvRows.findIndex(r =>
+    r.some(c => {
+      const v = clean(c).toLowerCase();
+      return v === 'manger' || v === 'manager';
+    })
+  );
+  if(headerIndex === -1) headerIndex = 0;
+
+  const headers = (csvRows[headerIndex] || []).map(h=>clean(h));
+  const dataRows = csvRows.slice(headerIndex+1);
+
+  let idxManager = findIdx(headers,['Manger','Manager']);
+  let idxYear    = findIdx(headers,['Year']);
+
+  // Wins / Losses by year (E,F)
+  let idxWins    = findIdx(headers,['Wins','Year Wins']);
+  let idxLosses  = findIdx(headers,['Losses','Year Losses']);
+
+  let idxTop3    = findIdx(headers,['Top 3 Finishes']);
+  let idxYearWinPct = findIdx(headers,['Year Win %','Year Win%','Win %']);
+
+  let idxLgWins   = findIdx(headers,['Lifetime WINS','Lifetime Wins']);
+  let idxLgLosses = findIdx(headers,['Lifetime Losses']);
+  let idxLgGames  = findIdx(headers,['Lifetime Games']);
+  let idxLgWinPct = findIdx(headers,['Lifetime WIN %','Lifetime Win %']);
+
+  let idxPOyear   = findIdx(headers,['Playoff App','# Playoff App','# Playoff Appearances','Playoff Appearances']);
+
+  let idxChamps   = findIdx(headers,['Tot Championships','Total Championships']);
+  let idxTotal2   = findIdx(headers,['Total 2nd Place','2nd Place Finishes']);
+  let idxTotal3   = findIdx(headers,['Total 3rd Place','3rd Place Finishes']);
+
+  let idxSeasons  = findIdx(headers,['Tot Years Active','Total Years Active','Seasons']);
+
+  let idxPOpct    = findIdx(headers,['Playoff Appearance %','Playoff Appearance %']);
+  let idxPayout   = findIdx(headers,['Lifetime Payout']);
+
+  // NEW: per-season Championship flag column (e.g. column J)
+  let idxChampFlag = findIdx(headers,['Championship','Champsionship']);
+
+  if(idxManager < 0) idxManager = 0;        // A
+  if(idxYear    < 0) idxYear    = 2;        // C
+  if(idxWins    < 0) idxWins    = 4;        // E
+  if(idxLosses  < 0) idxLosses  = 5;        // F
+  if(idxTop3    < 0) idxTop3    = 5;
+  if(idxYearWinPct < 0) idxYearWinPct = 12; // M
+
+  if(idxLgWins  < 0) idxLgWins  = 13;       // N
+  if(idxLgLosses< 0) idxLgLosses= 14;       // O
+  if(idxLgGames < 0) idxLgGames = 15;       // P
+  if(idxLgWinPct< 0) idxLgWinPct= 17;       // R
+
+  if(idxPOyear  < 0) idxPOyear  = 7;        // H
+
+  if(idxChamps  < 0) idxChamps  = 19;
+  if(idxTotal2  < 0) idxTotal2  = 20;
+  if(idxTotal3  < 0) idxTotal3  = 21;
+
+  if(idxSeasons < 0) idxSeasons = 21;
+
+  if(idxPOpct   < 0) idxPOpct   = 22;
+  if(idxPayout  < 0) idxPayout  = 23;
+
+  if(idxChampFlag < 0) idxChampFlag = 9;    // default to column J
+
+  const groups = new Map();
+
+  dataRows.forEach(r => {
+    const manager = clean(r[idxManager]);
+    if(!manager) return;
+
+    const year   = clean(r[idxYear]);
+    const winsY  = clean(r[idxWins]);
+    const lossesY= clean(r[idxLosses]);
+    const winPctYear = clean(r[idxYearWinPct]);
+    const top3   = clean(r[idxTop3]);
+    const poYear = clean(r[idxPOyear]);
+    const champFlag = clean(r[idxChampFlag]);
+
+    const lgWins    = clean(r[idxLgWins]);
+    const lgLosses  = clean(r[idxLgLosses]);
+    const lgGames   = clean(r[idxLgGames]);
+    const seasons   = clean(r[idxSeasons]);
+    const lgWinPct  = clean(r[idxLgWinPct]);
+    const champs    = clean(r[idxChamps]);
+    const total2    = clean(r[idxTotal2]);
+    const total3    = clean(r[idxTotal3]);
+    const poPct     = clean(r[idxPOpct]);
+    const payoutRaw = clean(r[idxPayout]);
+
+    if(!groups.has(manager)){
+      groups.set(manager,{
+        manager,
+        seasons:[],
+        lifetimeWins: lgWins,
+        lifetimeLosses: lgLosses,
+        lifetimeGames: lgGames,
+        seasonsCount: seasons,
+        lifetimeWinPct: lgWinPct,
+        playoffApps: 0,
+        champs,
+        total2nd: total2,
+        total3rd: total3,
+        playoffWinPct: poPct,
+        payoutSum: 0,
+        _champYears: []
+      });
+    }
+    const g = groups.get(manager);
+
+    let poCount = 0;
+    if(poYear){
+      const n = Number(poYear);
+      if(Number.isFinite(n)) poCount = n;
+    }
+
+    const isChamp = !!champFlag && champFlag !== '0' && champFlag.toLowerCase() !== 'no';
+
+    g.seasons.push({
+      year,
+      winPct: winPctYear,
+      wins: winsY,
+      losses: lossesY,
+      top3,
+      playoff: poCount > 0,
+      champ: isChamp
+    });
+
+    if(lgWins)    g.lifetimeWins    = lgWins;
+    if(lgLosses)  g.lifetimeLosses  = lgLosses;
+    if(lgGames)   g.lifetimeGames   = lgGames;
+    if(seasons)   g.seasonsCount    = seasons;
+    if(lgWinPct)  g.lifetimeWinPct  = lgWinPct;
+    if(champs)    g.champs          = champs;
+    if(total2)    g.total2nd        = total2;
+    if(total3)    g.total3rd        = total3;
+    if(poPct)     g.playoffWinPct   = poPct;
+
+    g.playoffApps += poCount;
+
+    if(payoutRaw){
+      const n = parseFloat(String(payoutRaw).replace(/[^0-9.-]/g,''));
+      if(Number.isFinite(n)) g.payoutSum += n;
+    }
+  });
+
+  let managers = Array.from(groups.values()).map(m=>{
+    m.seasons = (m.seasons||[])
+      .filter(s=>s.year)
+      .sort((a,b)=>(parseInt(a.year)||0)-(parseInt(b.year)||0));
+    m.top3Total = m.seasons.reduce((acc,s)=>acc+(Number(s.top3)||0),0);
+
+    /* numeric playoff win % for ranking */
+    let poNum = 0;
+    if(m.playoffWinPct){
+      const stripped = String(m.playoffWinPct).replace('%','').trim();
+      const n = parseFloat(stripped);
+      if(Number.isFinite(n)) poNum = n;
+    }
+    m._poPctNumeric = poNum;
+
+    // build championship years array – use short format like ’06
+const champYears = [];
+(m.seasons || []).forEach(s=>{
+  if(s.champ){
+    const full = parseYearToFull(s.year);
+    if (Number.isFinite(full)) {
+      const shortLabel = '’' + String(full).slice(-2); // e.g. 2006 -> ’06
+      champYears.push(shortLabel);
+    } else if (s.year) {
+      champYears.push(String(s.year));
+    }
+  }
+});
+m._champYears = champYears;
+
+    return m;
+  });
+
+  /* numeric lifetime win % for main rank */
+  managers.forEach(m=>{
+    const winsNum   = parseFloat(String(m.lifetimeWins||'').replace(/[^0-9.-]/g,'')) || 0;
+    const lossesNum = parseFloat(String(m.lifetimeLosses||'').replace(/[^0-9.-]/g,'')) || 0;
+    const totalGamesNumeric = winsNum + lossesNum;
+    m._winPctNumeric = totalGamesNumeric > 0 ? winsNum / totalGamesNumeric : 0;
+  });
+
+  /* rank by lifetime win % */
+  managers.sort((a,b)=>b._winPctNumeric - a._winPctNumeric);
+  managers.forEach((m,i)=>{ m.winRank = i+1; });
+
+  /* rank by playoff win % (1 = best) */
+  const sortedByPlayoff = [...managers].sort(
+    (a,b)=>(b._poPctNumeric||0)-(a._poPctNumeric||0)
+  );
+  sortedByPlayoff.forEach((m,i)=>{ m.playoffRank = i+1; });
+
+  return {managers,debug:`headers[${headers.length}] row ${headerIndex}`};
+}
+
+/* money helper */
+function fmtMoney(raw){
+  if(raw == null || raw === '') return '$0.00';
+  let n;
+  if(typeof raw === 'number'){
+    n = raw;
+  }else{
+    const s = String(raw).replace(/[^0-9.-]/g,'');
+    n = parseFloat(s);
+  }
+  if(!Number.isFinite(n)) return String(raw);
+  return '$'+n.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+/* Plugin: 3-digit labels above each point (only for line charts) */
+const pointLabelsPlugin = {
+  id: 'pointLabels',
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    if(chart.config.type !== 'line') return; // skip for bar view
+    const { ctx } = chart;
+    const styles = getComputedStyle(document.documentElement);
+    const color = styles.getPropertyValue('--chart-label').trim() ||
+                  (document.body.classList.contains('dark') ? '#ffffff' : '#111827');
+    const fontSize = (pluginOptions && pluginOptions.fontSize) || 10;
+
+    ctx.save();
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      meta.data.forEach((point, index) => {
+        const val = dataset.data[index];
+        if (val == null || isNaN(val)) return;
+
+        const x = point.x;
+        const y = point.y - 6;
+
+        ctx.fillStyle = color;
+        ctx.font = `${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+
+        const label = Number(val).toFixed(3);
+        ctx.fillText(label, x, y);
+      });
+    });
+    ctx.restore();
+  }
+};
+
+/* Plugin: data labels for stacked bar chart (wins/losses) */
+const barLabelsPlugin = {
+  id: 'barLabels',
+  afterDatasetsDraw(chart, args, pluginOptions) {
+    if(chart.config.type !== 'bar') return;
+    const { ctx } = chart;
+
+    const dark = document.body.classList.contains('dark');
+    const labelColor = dark ? '#020617' : '#111827'; // dark ink both modes
+    const fontSize = (pluginOptions && pluginOptions.fontSize) || 10;
+
+    ctx.save();
+    chart.data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      meta.data.forEach((bar, index) => {
+        const val = dataset.data[index];
+        if (!val || isNaN(val)) return;
+
+        const x = bar.x;
+        const yTop = bar.y;
+        const yBase = bar.base;
+
+        const isWins = (datasetIndex === 1);
+        const labelY = isWins
+          ? yTop + 10
+          : (yTop + yBase) / 2;
+
+        ctx.fillStyle = labelColor;
+        ctx.font = `${fontSize}px system-ui, -apple-system, Segoe UI, Roboto, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(val, x, labelY);
+      });
+    });
+    ctx.restore();
+  }
+};
+
+/* Plugin: squares around playoff years */
+const playoffTicksPlugin = {
+  id: 'playoffTicks',
+  afterDraw(chart, args, options) {
+    const { ctx, scales } = chart;
+    if (!scales || !scales.x) return;
+
+    const xAxis = scales.x;
+
+    const styles = getComputedStyle(document.documentElement);
+    const squareColor =
+      styles.getPropertyValue('--playoff-square').trim() ||
+      (document.body.classList.contains('dark') ? '#f9fafb' : '#111827');
+
+    const boxSize   = 20;
+    const lineWidth = 1;
+    const offsetY   = -11;
+
+    const flags = chart.data._playoffFlags || [];
+
+    ctx.save();
+    ctx.strokeStyle = squareColor;
+    ctx.lineWidth   = lineWidth;
+
+    (xAxis.ticks || []).forEach((tick, index) => {
+      if(!flags[index]) return;
+      const x = xAxis.getPixelForTick(index);
+      const y = xAxis.bottom + offsetY;
+      const half = boxSize / 2;
+
+      ctx.beginPath();
+      ctx.strokeRect(x - half, y - half, boxSize, boxSize);
+    });
+
+    ctx.restore();
+  }
+};
+
+function sliceSeasons(allSeasons, range){
+  const list = allSeasons || [];
+  if(range === 'first'){
+    // Explicit 2006–2015 window
+    return list.filter(s=>{
+      const y = parseYearToFull(s.year);
+      return y >= 2006 && y <= 2015;
+    });
+  }
+  // default: last 10 seasons actually played
+  const sorted = [...list];
+  // m.seasons is already sorted, but just in case:
+  sorted.sort((a,b)=>parseYearToFull(a.year)-parseYearToFull(b.year));
+  return sorted.slice(-10);
+}
+
+/* --- Chart config builders --- */
+function buildLineConfig(seasons, range){
+  const allSeasons = seasons || [];
+  const slice = sliceSeasons(allSeasons, range);
+
+  const labels = slice.map(s=>{
+    if(!s.year) return '';
+    const full = parseYearToFull(s.year);
+    if(!Number.isFinite(full)) return String(s.year);
+    return '’' + String(full).slice(-2); // ’06, ’15, etc.
+  });
+
+  const data   = slice.map(s=>{
+    const n=parseFloat(s.winPct);
+    return Number.isFinite(n)?n:null;
+  });
+  const flags  = slice.map(s=>!!s.playoff);
+
+  const styles = getComputedStyle(document.documentElement);
+  const tickColor = styles.getPropertyValue('--chart-label').trim() ||
+                    (document.body.classList.contains('dark') ? '#ffffff' : '#111827');
+
+  return {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        data,
+        tension:0.35,
+        borderWidth:2,
+        pointRadius:3,
+        pointHoverRadius:4,
+        borderColor:'rgba(34,197,94,1)',
+        backgroundColor:'rgba(34,197,94,.45)'
+      }],
+      _playoffFlags: flags
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:c=>{
+            const v=c.parsed.y;
+            return 'Win %: '+(Number.isFinite(v)?v.toFixed(3):v);
+          }
+        }},
+        pointLabels:{ fontSize:9 }
+      },
+      scales:{
+        x:{
+          grid:{display:false},
+          ticks:{color:tickColor,maxRotation:0,autoSkip:true}
+        },
+        y:{
+          beginAtZero:true,
+          min:0,
+          max:1,
+          grid:{color:'rgba(148,163,184,.5)'},
+          ticks:{
+            color:tickColor,
+            stepSize:0.1,
+            callback:v=>v.toFixed(1)
+          },
+          title:{
+            display:true,
+            text:'Win %',
+            color:tickColor,
+            font:{size:11,weight:'600'}
+          }
+        }
+      }
+    }
+  };
+}
+
+function buildWLConfig(seasons, range){
+  const allSeasons = seasons || [];
+  const slice = sliceSeasons(allSeasons, range);
+
+  const labels = slice.map(s=>{
+    if(!s.year) return '';
+    const full = parseYearToFull(s.year);
+    if(!Number.isFinite(full)) return String(s.year);
+    return '’' + String(full).slice(-2);
+  });
+
+  const wins   = slice.map(s=>Number(s.wins)||0);
+  const losses = slice.map(s=>Number(s.losses)||0);
+  const totals = slice.map((_,i)=>wins[i]+losses[i]);
+  const maxTotal = Math.max(10, ...totals);
+  const yMax = Math.ceil((maxTotal+1)/2)*2;
+
+  const flags  = slice.map(s=>!!s.playoff);
+
+  const styles = getComputedStyle(document.documentElement);
+  const tickColor = styles.getPropertyValue('--chart-label').trim() ||
+                    (document.body.classList.contains('dark') ? '#ffffff' : '#111827');
+  const winFill   = styles.getPropertyValue('--wl-win-fill').trim()   || 'rgba(34,197,94,0.9)';
+  const winBorder = styles.getPropertyValue('--wl-win-border').trim() || 'rgba(22,163,74,1)';
+  const lossFill  = styles.getPropertyValue('--wl-loss-fill').trim()  || 'rgba(15,23,42,0.15)';
+  const lossBorder= styles.getPropertyValue('--wl-loss-border').trim()|| 'rgba(15,23,42,0.4)';
+
+  return {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Losses',
+          data:losses,
+          backgroundColor:lossFill,
+          borderColor:lossBorder,
+          borderWidth:1,
+          stack:'wl'
+        },
+        {
+          label:'Wins',
+          data:wins,
+          backgroundColor:winFill,
+          borderColor:winBorder,
+          borderWidth:1,
+          stack:'wl'
+        }
+      ],
+      _playoffFlags: flags
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{enabled:false}
+      },
+      scales:{
+        x:{
+          stacked:true,
+          grid:{display:false},
+          ticks:{color:tickColor,maxRotation:0,autoSkip:true}
+        },
+        y:{
+          stacked:true,
+          beginAtZero:true,
+          min:0,
+          max:yMax,
+          grid:{color:'rgba(148,163,184,.5)'},
+          ticks:{
+            color:tickColor,
+            stepSize:2
+          },
+          title:{
+            display:true,
+            text:'Games',
+            color:tickColor,
+            font:{size:11,weight:'600'}
+          }
+        }
+      }
+    }
+  };
+}
+
+/* render cards + charts */
+function renderCards(managers, filterManager){
+  const box = $('#cards');
+  if(!box) return;
+  box.innerHTML = '';
+
+  for(const k in CHART_STATE){ delete CHART_STATE[k]; }
+
+  const list = (filterManager && filterManager !== '__all__')
+    ? managers.filter(m => m.manager === filterManager)
+    : managers;
+
+  const chartConfigs = [];
+
+  list.forEach((m,idx)=>{
+    const canvasId = `lr-chart-${idx}`;
+    const games   = m.lifetimeGames;
+    const payout  = m.payoutSum || 0;
+    const seasonsArr = m.seasons || [];
+    const champs  = m.champs || '0';
+    const poApps  = m.playoffApps || 0;
+    const total2  = m.total2nd || '0';
+    const total3  = m.total3rd || '0';
+    const seasonsCount = m.seasonsCount || String(seasonsArr.length || '');
+
+    const winsStr   = m.lifetimeWins   || '0';
+    const lossesStr = m.lifetimeLosses || '0';
+    const winsNum   = parseFloat(String(winsStr).replace(/[^0-9.-]/g,'')) || 0;
+    const lossesNum = parseFloat(String(lossesStr).replace(/[^0-9.-]/g,'')) || 0;
+    const totalGamesNumeric = winsNum + lossesNum;
+    const winPctDecimal = totalGamesNumeric > 0 ? winsNum / totalGamesNumeric : 0;
+    const winPctDisplay = winPctDecimal.toFixed(3);
+
+    const poWinRaw = m.playoffWinPct;
+    let poWinDisplay = '0.000';
+    if(poWinRaw){
+      const stripped = String(poWinRaw).replace('%','').trim();
+      const n = parseFloat(stripped);
+      if(Number.isFinite(n)){
+        poWinDisplay = n.toFixed(3);
+      }else if(stripped){
+        poWinDisplay = stripped;
+      }
+    }
+
+    const winsLossText = `${winsStr || 0} Wins - ${lossesStr || 0} Losses`;
+    const seasonsText = seasonsCount ? `${seasonsCount} seasons` : '';
+    const leftLine = [
+      games ? `${games} games` : '',
+      seasonsText
+    ].filter(Boolean).join(' · ');
+
+    const champYears = m._champYears || [];
+    const champYearsStr = champYears.length ? ` (${champYears.join(', ')})` : '';
+
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-head">
+        <div class="head-main">
+          <div class="mgr">${escapeHtml(m.manager)}</div>
+          <div class="subtitle">Lifetime Performance</div>
+        </div>
+        <div class="head-money">
+          <div class="money-pill">${fmtMoney(payout)}</div>
+          <div class="money-caption">Lifetime Earnings</div>
+        </div>
+      </div>
+
+      <div class="primary-row">
+        <div class="big-stat">
+          <div class="big-stat-row">
+            <div>
+              <div class="big-stat-label">Lifetime Win %</div>
+              <div class="big-stat-value">${escapeHtml(winPctDisplay)}</div>
+            </div>
+            <div style="min-width:80px;">
+              <div class="big-stat-rank-label">Win% Rank</div>
+              <div class="big-stat-rank-value">${escapeHtml(String(m.winRank || ''))}</div>
+            </div>
+          </div>
+          <div class="big-stat-sub-row">
+            <span>${escapeHtml(winsLossText)}</span>
+            <span>${escapeHtml(leftLine)}</span>
+          </div>
+        </div>
+
+        <div class="chart-shell">
+          <div class="chart-header-row">
+            <div class="chart-title" id="${canvasId}-title">Win% by Year</div>
+            <div class="chart-header-right">
+              <div class="legend-row">
+                <span class="legend-square"></span>
+                <span>Playoff Years</span>
+              </div>
+              <button class="chart-view-pill" type="button" data-target="${canvasId}">
+                <span id="${canvasId}-view-label">W/L View</span>
+              </button>
+            </div>
+          </div>
+          <div class="chart-sub-row">
+            <button class="chart-range-pill" type="button" data-target="${canvasId}">
+              <span id="${canvasId}-range-label">Last 10 Seasons</span>
+            </button>
+            <div class="wl-legend" id="${canvasId}-wl-legend">
+              <span class="wl-legend-pair">
+                <span class="wl-square wl-win"></span>
+                <span>Wins</span>
+              </span>
+              <span class="wl-legend-pair">
+                <span class="wl-square wl-loss"></span>
+                <span>Losses</span>
+              </span>
+            </div>
+          </div>
+          <div class="chart-shell-inner">
+            <canvas id="${canvasId}" aria-label="Win percentage by year for ${escapeHtml(m.manager)}"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-tile">
+  <div class="stat-label">Championships 🏆</div>
+  <div class="stat-value">
+    ${escapeHtml(champs)}
+    <span class="champ-years">${escapeHtml(champYearsStr)}</span>
+  </div>
+</div>
+        <div class="stat-tile">
+          <div class="stat-label">Playoff Appearances</div>
+          <div class="stat-value">${escapeHtml(String(poApps))}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">2nd Place Finishes 🥈</div>
+          <div class="stat-value">${escapeHtml(total2)}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Playoff Appearance %</div>
+          <div class="stat-value">${escapeHtml(poWinDisplay)}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">3rd Place Finishes 🥉</div>
+          <div class="stat-value">${escapeHtml(total3)}</div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-label">Playoff Appear % Rank</div>
+          <div class="stat-value">${escapeHtml(String(m.playoffRank || 0))}</div>
+        </div>
+      </div>
+    `;
+    box.appendChild(card);
+
+    chartConfigs.push({canvasId,seasons:seasonsArr});
+  });
+
+  buildCharts(chartConfigs);
+
+  chartConfigs.forEach(cfg=>{
+    const viewBtn = document.querySelector(`button.chart-view-pill[data-target="${cfg.canvasId}"]`);
+    if(viewBtn){
+      viewBtn.addEventListener('click',()=>{
+        toggleChartMode(cfg.canvasId);
+      });
+    }
+    const rangeBtn = document.querySelector(`button.chart-range-pill[data-target="${cfg.canvasId}"]`);
+    if(rangeBtn){
+      rangeBtn.addEventListener('click',()=>{
+        toggleRangeMode(cfg.canvasId);
+      });
+    }
+  });
+}
+
+/* Build all charts (initially Win% mode, LAST 10 seasons) */
+function buildCharts(configs){
+  if (!window._lrPluginsRegistered) {
+    Chart.register(pointLabelsPlugin, barLabelsPlugin, playoffTicksPlugin);
+    window._lrPluginsRegistered = true;
+  }
+
+  _lrCharts.forEach(ch => ch.destroy());
+  _lrCharts = [];
+  for(const k in CHART_STATE){ delete CHART_STATE[k]; }
+
+  configs.forEach(cfg=>{
+    const canvas = document.getElementById(cfg.canvasId);
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const baseCfg = buildLineConfig(cfg.seasons,'last');
+    const chart = new Chart(ctx, baseCfg);
+    chart.data._playoffFlags = baseCfg.data._playoffFlags;
+
+    _lrCharts.push(chart);
+    CHART_STATE[cfg.canvasId] = {
+      chart,
+      mode:'pct',        // pct = Win% line, wl = W/L bar
+      seasons:cfg.seasons,
+      range:'last'       // 'last' or 'first'
+    };
+  });
+
+  applyChartThemeColors();
+}
+
+/* Toggle one chart between Win% and W/L modes */
+function toggleChartMode(canvasId){
+  const state = CHART_STATE[canvasId];
+  if(!state) return;
+
+  const titleEl  = document.getElementById(`${canvasId}-title`);
+  const labelEl  = document.getElementById(`${canvasId}-view-label`);
+  const wlLegend = document.getElementById(`${canvasId}-wl-legend`);
+
+  const nextMode = state.mode === 'pct' ? 'wl' : 'pct';
+  let cfg;
+  if(nextMode === 'wl'){
+    cfg = buildWLConfig(state.seasons, state.range);
+    if(titleEl) titleEl.textContent = 'Win/Loss by Year';
+    if(labelEl) labelEl.textContent = 'Win% View';
+    if(wlLegend) wlLegend.style.display = 'flex';
+  }else{
+    cfg = buildLineConfig(state.seasons, state.range);
+    if(titleEl) titleEl.textContent = 'Win% by Year';
+    if(labelEl) labelEl.textContent = 'W/L View';
+    if(wlLegend) wlLegend.style.display = 'none';
+  }
+
+  const chart = state.chart;
+  chart.config.type = cfg.type;
+  chart.options = cfg.options;
+  chart.data = cfg.data;
+  chart.data._playoffFlags = cfg.data._playoffFlags;
+  chart.update();
+
+  state.mode = nextMode;
+  applyChartThemeColors();
+}
+
+/* Toggle one chart between LAST 10 and FIRST 10 seasons */
+function toggleRangeMode(canvasId){
+  const state = CHART_STATE[canvasId];
+  if(!state) return;
+
+  const rangeLabelEl = document.getElementById(`${canvasId}-range-label`);
+  const nextRange = state.range === 'last' ? 'first' : 'last';
+
+  let cfg;
+  if(state.mode === 'pct'){
+    cfg = buildLineConfig(state.seasons, nextRange);
+  }else{
+    cfg = buildWLConfig(state.seasons, nextRange);
+  }
+
+  const chart = state.chart;
+  chart.config.type = cfg.type;
+  chart.options = cfg.options;
+  chart.data = cfg.data;
+  chart.data._playoffFlags = cfg.data._playoffFlags;
+  chart.update();
+
+  if(rangeLabelEl){
+    rangeLabelEl.textContent = (nextRange === 'first')
+      ? 'First 10 Seasons'
+      : 'Last 10 Seasons';
+  }
+
+  state.range = nextRange;
+  applyChartThemeColors();
+}
+
+/* team filter dropdown */
+function initTeamFilter(managers){
+  const select = $('#teamFilter');
+  if(!select) return;
+
+  select.innerHTML = '<option value="__all__">All Teams</option>';
+
+  const names = [...new Set(managers.map(m=>m.manager))].sort((a,b)=>a.localeCompare(b));
+  names.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener('change', ()=>{
+    const val = select.value || '__all__';
+    renderCards(MANAGERS, val);
+  });
+}
+
+/* load */
+async function load(){
+  try{
+    const csvRows = await fetchCsv(SHEET_ID,GID);
+    if(!csvRows || !csvRows.length){
+      $('#cards').textContent = 'No lifetime data available.';
+      return;
+    }
+    const {managers,debug} = buildManagers(csvRows);
+    if(!managers.length){
+      $('#cards').textContent = 'No lifetime data found for any manager. (Debug: '+debug+')';
+      return;
+    }
+    MANAGERS = managers;
+    initTeamFilter(managers);
+    renderCards(managers, '__all__');
+  }catch(e){
+    console.error('Lifetime load failed',e);
+    $('#cards').textContent = 'Error loading lifetime record data.';
+  }
+}
+load();
+
+/* view counter */
+const VIEW_KEY='ss_views_lifetime_record';
+function getViews(){
+  const n=Number(localStorage.getItem(VIEW_KEY)||0);
+  return Number.isFinite(n)?n:0;
+}
+function setViews(n){
+  try{localStorage.setItem(VIEW_KEY,String(n));}catch{}
+}
+function renderViews(){
+  const el=$('#viewCountN');
+  if(el) el.textContent=getViews().toLocaleString();
+}
+addEventListener('DOMContentLoaded',()=>{
+  const n=getViews()+1;
+  setViews(n);
+  renderViews();
+});
+</script>
+</body>
+</html>
