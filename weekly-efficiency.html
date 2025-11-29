@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Efficiency — Sacred Sundays</title>
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- Chart.js + DataLabels plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <style>
+    :root{
+      --max-width:1100px;
+
+      /* LIGHT THEME — green accent */
+      --bg:#e4f3ea;
+      --bg-radial-top:#ecfdf3;
+      --bg-radial-bottom:#dcfce7;
+      --card-bg:#ffffff;
+      --card-border:#e5e7eb;
+      --text-main:#0f172a;
+      --text-subtle:#6b7280;
+      --accent:#22c55e;
+      --accent-soft:rgba(34,197,94,0.12);
+      --accent-strong:rgba(34,197,94,0.28);
+      --pill-bg:#f9fafb;
+      --pill-border:#d1d5db;
+      --pill-text:#111827;
+      --pill-active-bg:#22c55e;
+      --pill-active-text:#ffffff;
+      --shadow-soft:0 18px 40px rgba(15,23,42,0.16);
+      --divider:rgba(148,163,184,0.55);
+      --chip-bg:#f9fafb;
+      --chip-border:#e5e7eb;
+      --chip-text:#4b5563;
+      --danger:#b91c1c;
+      --success:#047857;
+      --warning:#a16207;
+    }
+
+    body.dark{
+      --bg:#020617;
+      --bg-radial-top:#022c22;
+      --bg-radial-bottom:#020617;
+      --card-bg:#020617;
+      --card-border:#1f2937;
+      --text-main:#f9fafb;
+      --text-subtle:#9ca3af;
+      --accent:#4ade80;
+      --accent-soft:rgba(74,222,128,0.22);
+      --accent-strong:rgba(74,222,128,0.38);
+      --pill-bg:#020617;
+      --pill-border:#4b5563;
+      --pill-text:#e5e7eb;
+      --pill-active-bg:#4ade80;
+      --pill-active-text:#022c22;
+      --shadow-soft:0 18px 40px rgba(0,0,0,0.9);
+      --divider:rgba(55,65,81,0.95);
+      --chip-bg:#020617;
+      --chip-border:#4b5563;
+      --chip-text:#e5e7eb;
+    }
+
+    *{box-sizing:border-box;}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",
+        "Segoe UI",sans-serif;
+      background:
+        radial-gradient(circle at 0 0,var(--bg-radial-top),transparent 55%),
+        radial-gradient(circle at 100% 0,var(--bg-radial-bottom),transparent 55%),
+        var(--bg);
+      color:var(--text-main);
+      display:flex;
+      justify-content:center;
+    }
+
+    .page{
+      width:100%;
+      max-width:var(--max-width);
+      padding:18px 14px 30px;
+      position:relative;
+    }
+
+    @media(min-width:768px){
+      .page{padding:26px 18px 40px;}
+    }
+
+    /******** HEADER + NAV PILLS ********/
+    .page-header{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      margin-bottom:16px;
+    }
+
+    .title-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .title-icon{
+      width:28px;
+      height:28px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--accent-soft);
+      font-size:17px;
+    }
+
+    .title-text{
+      font-weight:700;
+      font-size:1.15rem;
+      letter-spacing:0.08em;
+      text-transform:uppercase;
+    }
+
+    .nav-pills{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .nav-pill{
+      flex:1 1 calc(50% - 6px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      padding:7px 8px;
+      border-radius:14px;
+      border:1px dashed var(--pill-border);
+      background:var(--pill-bg);
+      color:var(--pill-text);
+      font-size:0.78rem;
+      letter-spacing:0.11em;
+      text-transform:uppercase;
+      cursor:pointer;
+      user-select:none;
+      transition:background 0.18s,border-color 0.18s,transform 0.12s;
+    }
+
+    .nav-pill span.emoji{
+      font-size:1.05rem;
+    }
+
+    .nav-pill:active{
+      transform:scale(0.97);
+    }
+
+    .nav-pill.dark-active{
+      background:var(--pill-active-bg);
+      color:var(--pill-active-text);
+      border-style:solid;
+      border-color:var(--pill-active-bg);
+    }
+
+    /******** ALL TEAMS DROPDOWN ********/
+    .team-dropdown{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      top:80px;
+      z-index:20;
+      display:none;
+    }
+
+    .team-dropdown.open{display:block;}
+
+    .team-dropdown-card{
+      max-width:420px;
+      max-height:320px;
+      overflow-y:auto;
+      padding:10px 10px 8px;
+      border-radius:18px;
+      border:1px solid var(--card-border);
+      background:var(--card-bg);
+      box-shadow:var(--shadow-soft);
+      backdrop-filter:blur(14px);
+    }
+
+    .team-dropdown-title{
+      font-size:0.75rem;
+      text-transform:uppercase;
+      letter-spacing:0.16em;
+      color:var(--text-subtle);
+      margin-bottom:6px;
+    }
+
+    .team-dd-item{
+      width:100%;
+      text-align:left;
+      padding:6px 8px;
+      border-radius:10px;
+      border:1px solid transparent;
+      background:transparent;
+      color:var(--text-main);
+      font-size:0.8rem;
+      display:flex;
+      gap:6px;
+      cursor:pointer;
+      transition:background 0.14s,border-color 0.14s,transform 0.08s;
+    }
+
+    .team-dd-item.active{
+      background:var(--accent-soft);
+      border-color:var(--accent-strong);
+    }
+
+    .team-dd-item:active{
+      transform:scale(0.98);
+    }
+
+    main{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .teams-container{
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .card{
+      background:radial-gradient(circle at 0 0,var(--accent-soft),transparent 65%),
+        var(--card-bg);
+      border-radius:22px;
+      border:1px solid var(--card-border);
+      box-shadow:var(--shadow-soft);
+      padding:14px 14px 16px;
+      backdrop-filter:blur(18px);
+    }
+
+    .mgr-heading-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .mgr-ident{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+
+    .mgr-team{
+      font-size:1.05rem;
+      font-weight:700;
+    }
+
+    /******** SUMMARY PILL ********/
+    .mgr-summary-pill{
+      border-radius:18px;
+      background:var(--card-bg);
+      border:1px solid var(--card-border);
+      padding:10px 10px 8px;
+      display:grid;
+      grid-template-columns:1.4fr 0.8fr;
+      grid-auto-rows:auto;
+      column-gap:10px;
+      row-gap:2px;
+    }
+
+    .summary-top-label{
+      font-size:0.68rem;
+      text-transform:uppercase;
+      letter-spacing:0.14em;
+      color:var(--text-subtle);
+    }
+
+    .summary-top-label.right{
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .summary-main-left{
+      font-weight:700;
+      font-size:1.35rem;
+    }
+
+    .summary-main-right{
+      font-weight:700;
+      font-size:1.35rem;
+      text-align:right;
+    }
+
+    .summary-sub-label{
+      font-size:0.68rem;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:var(--text-subtle);
+      margin-top:4px;
+    }
+
+    .summary-sub-label.right{
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .summary-sub-value{
+      font-size:0.68rem;
+      font-weight:900;
+      color:var(--text-subtle);
+    }
+
+    .summary-sub-value.right{
+      text-align:right;
+    }
+
+    .divider{
+      height:1px;
+      margin:10px 0 12px;
+      background:linear-gradient(to right,transparent,var(--divider),transparent);
+    }
+
+    /******** CHART AREA ********/
+    .card-section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:6px;
+    }
+
+    .card-section-title span.label{
+      font-size:0.75rem;
+      text-transform:uppercase;
+      letter-spacing:0.18em;
+      color:var(--text-subtle);
+    }
+
+    .chart-help-pill{
+      font-size:0.64rem; /* smaller per your request */
+      opacity:0.85;
+      cursor:default;
+    }
+.card-section-title .chart-help-pill {
+    font-size: 0.55rem !important;
+    padding: 2px 6px !important;   /* optional, makes the pill shrink too */
+}
+
+
+    .chart-legend{
+      font-size:0.7rem;
+      color:var(--text-subtle);
+    }
+
+    .legend-item{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--chip-border);
+      background:var(--chip-bg);
+    }
+
+    .legend-box{
+      width:9px;
+      height:9px;
+      border-radius:3px;
+      border:1.5px solid var(--text-main);
+      background:transparent;
+    }
+
+    .chart-filters{
+      display:flex;
+      gap:6px;
+      margin-bottom:6px;
+    }
+
+    .chart-pill{
+      padding:3px 9px;
+      border-radius:999px;
+      border:1px solid var(--pill-border);
+      background:var(--pill-bg);
+      color:var(--pill-text);
+      font-size:0.7rem;
+      text-transform:uppercase;
+      letter-spacing:0.14em;
+      cursor:pointer;
+      white-space:nowrap;
+      transition:background 0.18s,border-color 0.18s,transform 0.08s;
+    }
+
+    .chart-pill.active{
+      background:var(--pill-active-bg);
+      color:var(--pill-active-text);
+      border-color:var(--pill-active-bg);
+    }
+
+    .chart-pill:active{
+      transform:scale(0.97);
+    }
+
+    .chart-container{
+      position:relative;
+      width:100%;
+      height:250px;
+    }
+    @media(min-width:768px){
+      .chart-container{height:280px;}
+    }
+
+    .chart-meta{
+      margin-top:10px; /* closer to chart */
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      font-size:0.74rem;
+      color:var(--text-subtle);
+    }
+
+    .chart-meta span.tag{
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--chip-border);
+      background:var(--chip-bg);
+      color:var(--chip-text);
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+    }
+
+    .legend-swatch{
+      display:inline-block;
+      width:16px;
+      height:0;
+      border-radius:999px;
+    }
+
+    .legend-ytd-swatch{
+      border-bottom:2px dashed var(--warning);
+    }
+
+    .legend-league-swatch{
+      border-bottom:2px dashed #ff009d;
+    }
+
+    /******** WEEK DETAIL CARD ********/
+    .week-detail{
+      margin-top:10px;
+    }
+
+    .week-card{
+      background:radial-gradient(circle at 100% 0,var(--accent-soft),transparent 75%),
+        var(--card-bg);
+      border-radius:18px;
+      border:1px solid var(--card-border);
+      box-shadow:var(--shadow-soft);
+      padding:12px 12px 13px;
+      min-height:190px;
+      font-size:0.78rem;
+    }
+
+    .wk-label{
+      font-size:0.72rem;
+      text-transform:uppercase;
+      letter-spacing:0.16em;
+      color:var(--text-subtle);
+      margin-bottom:2px;
+    }
+
+    .wk-title-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:baseline;
+      gap:8px;
+      margin-bottom:6px;
+    }
+
+    .wk-team{
+      font-weight:600;
+      font-size:0.92rem;
+    }
+
+    .wk-eff-pill{
+  padding:3px 9px;
+  border-radius:999px;
+  border:1px solid var(--accent-strong);
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:0.72rem;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  position:relative;
+  top:-13px;   /* move pill up – tweak -6 / -10px as needed */
+}
+
+
+    .wk-eff-pill strong{
+      font-size:0.86rem;
+    }
+
+    .wk-stat-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:7px;
+      margin-top:6px;
+    }
+
+    .wk-stat-box{
+      padding:5px 7px;
+      border-radius:10px;
+      border:1px solid var(--chip-border);
+      background:var(--chip-bg);
+    }
+
+    .wk-stat-label{
+      font-size:0.65rem;
+      text-transform:uppercase;
+      letter-spacing:0.16em;
+      color:var(--text-subtle);
+      margin-bottom:2px;
+    }
+
+    .wk-stat-val{
+      font-weight:600;
+    }
+
+    .wk-bench{
+      margin-top:8px;
+      padding-top:6px;
+      border-top:1px dashed var(--divider);
+    }
+
+    .wk-bench-title{
+      font-size:0.66rem;
+      text-transform:uppercase;
+      letter-spacing:0.16em;
+      color:var(--text-subtle);
+      margin-bottom:3px;
+    }
+
+    .wk-bench-body{
+      line-height:1.35;
+    }
+
+    .wk-outcomes{
+      margin-top:7px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .wk-outcome-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+
+    .wk-tag{
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--chip-border);
+      background:var(--chip-bg);
+      color:var(--chip-text);
+      font-size:0.72rem;
+    }
+
+    .wk-tag.success{
+      border-color:var(--success);
+      color:var(--success);
+    }
+    .wk-tag.danger{
+      border-color:var(--danger);
+      color:var(--danger);
+    }
+
+    .wk-collapse-btn{
+      padding:3px 10px;
+      font-size:0.65rem;
+      letter-spacing:0.14em;
+      text-transform:uppercase;
+    }
+
+    .empty-state{
+      font-size:0.8rem;
+      color:var(--text-subtle);
+      text-align:center;
+      padding:16px 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <div class="title-row">
+        <div class="title-icon">📈</div>
+        <div class="title-text">Weekly Efficiency</div>
+      </div>
+      <div class="nav-pills">
+        <button class="nav-pill" id="btnHome" type="button">
+          <span class="emoji">🏠</span><span>Home</span>
+        </button>
+        <button class="nav-pill" id="btnReset" type="button">
+          <span class="emoji">🔄</span><span>Reset Page</span>
+        </button>
+        <button class="nav-pill" id="btnDarkMode" type="button">
+          <span class="emoji" id="darkModeIcon">🌙</span>
+          <span id="darkModeLabel">Dark Mode</span>
+        </button>
+        <button class="nav-pill" id="btnAllTeams" type="button">
+          <span class="emoji">📋</span><span id="allTeamsLabel">All Teams</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Dropdown -->
+    <div class="team-dropdown" id="teamDropdown">
+      <div class="team-dropdown-card">
+        <div class="team-dropdown-title">Teams</div>
+        <div id="teamDropdownList"></div>
+      </div>
+    </div>
+
+    <main>
+      <div class="teams-container" id="teamsContainer"></div>
+    </main>
+  </div>
+
+  <script>
+    if (window.ChartDataLabels) {
+      Chart.register(ChartDataLabels);
+    }
+
+    function getColorTokens(){
+      const s = getComputedStyle(document.body);
+      return {
+        text:    (s.getPropertyValue("--text-subtle") || "#6b7280").trim(),
+        grid:    (s.getPropertyValue("--card-border") || "#e5e7eb").trim(),
+        accent:  (s.getPropertyValue("--accent") || "#22c55e").trim(),
+        success: (s.getPropertyValue("--success") || "#047857").trim(),
+        danger:  (s.getPropertyValue("--danger") || "#b91c1c").trim(),
+        warning: (s.getPropertyValue("--warning") || "#a16207").trim(),
+        cardBg:  (s.getPropertyValue("--card-bg") || "#ffffff").trim(),
+        main:    (s.getPropertyValue("--text-main") || "#0f172a").trim()
+      };
+    }
+
+    /***** Box drawing for Abandoned Wins (tick labels) *****/
+    const BOX_OFFSET_Y = -9;   // distance under tick label
+    const BOX_HEIGHT   = 16;
+
+    const AbandonedWinsPlugin = {
+      id: "abandonedWins",
+      afterDraw(chart) {
+        const xAxis = chart.scales.x;
+        if (!xAxis) return;
+        const ds = chart.data.datasets[0];
+        if (!ds || !ds.abandoned) return;
+        const abandoned = ds.abandoned;
+        const ctx = chart.ctx;
+        const ticks = xAxis.ticks || [];
+        if (!ticks.length) return;
+
+        const colors = getColorTokens();
+        ctx.save();
+        ctx.strokeStyle = colors.main;
+        ctx.lineWidth = 1.6;
+
+        const paddingX = 4;
+
+        const tickFontSize = (chart.options.scales.x.ticks.font &&
+                              chart.options.scales.x.ticks.font.size)
+                             ? chart.options.scales.x.ticks.font.size
+                             : 10;
+        ctx.font = tickFontSize + "px sans-serif";
+
+        ticks.forEach((tick, index) => {
+          if (!abandoned[index]) return;
+          const label = tick.label;
+          if (label == null) return;
+
+          const x = xAxis.getPixelForTick(index);
+          const textWidth = ctx.measureText(label).width;
+          const rectWidth = textWidth + paddingX * 2;
+
+          const centerY = xAxis.bottom + BOX_OFFSET_Y;
+          const top = centerY - BOX_HEIGHT / 2;
+          const left = x - rectWidth / 2;
+
+          ctx.beginPath();
+          if (ctx.roundRect) {
+            ctx.roundRect(left, top, rectWidth, BOX_HEIGHT, 3);
+          } else {
+            ctx.rect(left, top, rectWidth, BOX_HEIGHT);
+          }
+          ctx.stroke();
+        });
+
+        ctx.restore();
+      }
+    };
+
+    Chart.register(AbandonedWinsPlugin);
+
+    const SHEET_CSV_URL =
+      "https://docs.google.com/spreadsheets/d/1vNjLCTxmM1c09aONXyQYpGTPwcGG-hmnflq8-ZC3Rmo/export?format=csv&gid=465215196";
+
+    const DARK_KEY = "sacredSundaysDark";
+
+    const els = {
+      btnHome: document.getElementById("btnHome"),
+      btnReset: document.getElementById("btnReset"),
+      btnDarkMode: document.getElementById("btnDarkMode"),
+      darkModeLabel: document.getElementById("darkModeLabel"),
+      darkModeIcon: document.getElementById("darkModeIcon"),
+      btnAllTeams: document.getElementById("btnAllTeams"),
+      allTeamsLabel: document.getElementById("allTeamsLabel"),
+      teamDropdown: document.getElementById("teamDropdown"),
+      teamDropdownList: document.getElementById("teamDropdownList"),
+      teamsContainer: document.getElementById("teamsContainer")
+    };
+
+    let teamsByName = new Map();
+    let teamList = [];
+    let selectedFilterTeam = null;
+    let leagueEff = 0;
+
+    function setDarkModeLabel(isDark){
+      els.darkModeLabel.textContent = isDark ? "Light Mode" : "Dark Mode";
+      els.darkModeIcon.textContent = isDark ? "☀️" : "🌙";
+    }
+
+    function applyInitialDarkMode(){
+      const stored = localStorage.getItem(DARK_KEY);
+      const prefersDark = window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const shouldDark = stored === "1" || (stored === null && prefersDark);
+      if(shouldDark){
+        document.body.classList.add("dark");
+        els.btnDarkMode.classList.add("dark-active");
+      }
+      setDarkModeLabel(shouldDark);
+    }
+
+    function toggleDark(){
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      els.btnDarkMode.classList.toggle("dark-active", isDark);
+      localStorage.setItem(DARK_KEY, isDark ? "1" : "0");
+      setDarkModeLabel(isDark);
+      teamList.forEach(t => {
+        if(t.chart){
+          applyChartTheme(t.chart);
+          t.chart.update();
+        }
+      });
+    }
+
+    els.btnHome.addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    els.btnReset.addEventListener("click", () => {
+      selectedFilterTeam = null;
+      els.allTeamsLabel.textContent = "All Teams";
+      updateTeamVisibility();
+      teamList.forEach(t => resetWeekCard(t));
+      window.scrollTo({top:0,behavior:"smooth"});
+    });
+
+    els.btnDarkMode.addEventListener("click", toggleDark);
+
+    els.btnAllTeams.addEventListener("click", () => {
+      els.teamDropdown.classList.toggle("open");
+    });
+
+    document.addEventListener("click", (e) => {
+      if(e.target === els.btnAllTeams || els.btnAllTeams.contains(e.target)) return;
+      if(els.teamDropdown.contains(e.target)) return;
+      els.teamDropdown.classList.remove("open");
+    });
+
+    function slugify(str){
+      return str.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+    }
+
+    function parseCsv(text){
+      const lines = text.replace(/\r\n/g,"\n").split("\n").filter(x => x.trim().length);
+      if(!lines.length) return {header:[],rows:[]};
+
+      function splitLine(line){
+        const out = [];
+        let field = "";
+        let inQuotes = false;
+        for(let i=0;i<line.length;i++){
+          const ch = line[i];
+          if(ch === '"'){
+            if(inQuotes && line[i+1] === '"'){
+              field += '"'; i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if(ch === "," && !inQuotes){
+            out.push(field);
+            field = "";
+          } else {
+            field += ch;
+          }
+        }
+        out.push(field);
+        return out.map(s => s.trim());
+      }
+
+      const header = splitLine(lines[0]);
+      const rows = lines.slice(1).map(splitLine);
+      return {header,rows};
+    }
+
+    async function loadData(){
+      try{
+        const res = await fetch(SHEET_CSV_URL);
+        if(!res.ok) throw new Error("HTTP "+res.status);
+        const text = await res.text();
+        const {header,rows} = parseCsv(text);
+        if(!rows.length) throw new Error("No rows");
+
+        const idx = n => header.indexOf(n);
+
+        const cWeek   = idx("Week");
+        const cTeam   = idx("Team");
+        const cOwner  = idx("Owner");
+        const cProj   = idx("Projected Points");
+        const cActual = idx("Actual Points");
+        const cOpt    = idx("Optimal Points");
+        const cWaste  = idx("Wasted Points");
+        const cBench  = idx("Bench Upgrades");
+        const cActRes = idx("Actual Result");
+        const cOptRes = idx("Optimal Result");
+        const cOutcome= idx("Outcome Change");
+
+        const map = new Map();
+
+        rows.forEach(r => {
+          const team  = r[cTeam]  || "";
+          const owner = r[cOwner] || "";
+          if(!team || !owner) return;
+
+          const week   = parseInt(r[cWeek],10);
+          if(!week) return;
+
+          const proj   = parseFloat(r[cProj]   || "0");
+          const actual = parseFloat(r[cActual] || "0");
+          const optimal= parseFloat(r[cOpt]    || "0");
+          const wasted = parseFloat(r[cWaste]  || "0");
+          const bench  = r[cBench]            || "";
+          const actRes = r[cActRes]           || "";
+          const optRes = r[cOptRes]           || "";
+          const outcome= r[cOutcome]          || "";
+
+          let obj = map.get(team);
+          if(!obj){
+            obj = {
+              team,
+              owner,
+              slug: slugify(team),
+              weeks:[],
+              totalActual:0,
+              totalOptimal:0,
+              winsAbandoned:0,
+              eff:0,
+              rank:0,
+              chart:null,
+              range:"reg"
+            };
+            map.set(team,obj);
+          }
+
+          const eff = optimal>0 ? (actual/optimal) : 0;
+
+          obj.weeks.push({
+            week,
+            proj,
+            actual,
+            optimal,
+            eff,
+            wasted,
+            bench,
+            actRes,
+            optRes,
+            outcome
+          });
+
+          obj.totalActual  += actual;
+          obj.totalOptimal += optimal;
+          if(outcome === "Would Have Won") obj.winsAbandoned++;
+        });
+
+        const list = Array.from(map.values());
+        let leagueTotalActual = 0;
+        let leagueTotalOptimal = 0;
+
+        list.forEach(t => {
+          t.eff = t.totalOptimal>0 ? (t.totalActual/t.totalOptimal) : 0;
+          t.weeks.sort((a,b) => a.week-b.week);
+          leagueTotalActual  += t.totalActual;
+          leagueTotalOptimal += t.totalOptimal;
+        });
+
+        leagueEff = leagueTotalOptimal>0 ? (leagueTotalActual/leagueTotalOptimal) : 0;
+
+        list.sort((a,b) => b.eff-a.eff);
+        list.forEach((t,i) => {t.rank = i+1;});
+
+        teamsByName = new Map(list.map(t => [t.team,t]));
+        teamList = list;
+
+        renderTeams();
+        buildTeamDropdown();
+
+      }catch(err){
+        console.error(err);
+        els.teamsContainer.innerHTML =
+          '<div class="empty-state">Unable to load Weekly Efficiency data. Check sheet settings.</div>';
+      }
+    }
+
+    function renderTeams(){
+      const parts = [];
+      teamList.forEach(t => {
+        const slug = t.slug;
+        const effPct = (t.eff*100).toFixed(1);
+        const leaguePct = (leagueEff*100).toFixed(1);
+        const abandonedWeeks = t.weeks
+  .filter(w => w.outcome === "Would Have Won")
+  .map(w => "W" + w.week);
+
+const winsText = abandonedWeeks.length > 0
+  ? abandonedWeeks.join(", ")
+  : "NONE";
+
+
+        parts.push(`
+          <section class="team-block" data-team="${t.team}">
+            <article class="card">
+              <div class="mgr-heading-row">
+                <div class="mgr-ident">
+                  <div class="mgr-team">${t.team}</div>
+                </div>
+              </div>
+
+              <div class="mgr-summary-pill">
+                <div class="summary-top-label">Team Efficiency %</div>
+                <div class="summary-top-label right">League Avg %</div>
+
+                <div class="summary-main-left" id="summaryEffPct-${slug}">${effPct}%</div>
+                <div class="summary-main-right" id="summaryLeague-${slug}">${leaguePct}%</div>
+
+                <div class="summary-sub-label">Actual Pts</div>
+                <div class="summary-sub-label left">Efficiency Rank</div>
+
+                <div class="summary-sub-value" id="summaryActual-${slug}">
+                  ${t.totalActual.toFixed(2)}
+                </div>
+                <div class="summary-sub-value" id="summaryRank-${slug}" style="text-align:left;">
+                  RANK #${t.rank}
+                </div>
+
+                <div class="summary-sub-label">Optimal Pts</div>
+                <div class="summary-sub-label right">Wins Abandoned</div>
+
+                <div class="summary-sub-value" id="summaryOptimal-${slug}">
+                  ${t.totalOptimal.toFixed(2)}
+                </div>
+                <div class="summary-sub-value" id="summaryWins-${slug}">
+                  ${winsText}
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="card-section-title">
+                <span class="label">Efficiency by Week</span>
+                <button class="chart-pill chart-help-pill" type="button" disabled>
+                  Tap % for details
+                </button>
+              </div>
+
+              <div class="chart-filters">
+                <button class="chart-pill active" data-toggle-range="${slug}">
+                  Playoffs
+                </button>
+              </div>
+
+              <div class="chart-container">
+                <canvas id="effChart-${slug}"></canvas>
+              </div>
+
+              <div class="chart-meta">
+                <span class="tag">
+                  <span class="legend-box"></span>
+                  Abandoned Wins
+                </span>
+                <span class="tag">
+                  <span class="legend-swatch legend-ytd-swatch"></span>
+                  Team Avg
+                </span>
+                <span class="tag">
+                  <span class="legend-swatch legend-league-swatch"></span>
+                  League Avg
+                </span>
+              </div>
+
+              <div class="week-detail" id="weekDetailWrap-${slug}" style="display:none;">
+                <div class="week-card" id="weekDetail-${slug}"></div>
+              </div>
+            </article>
+          </section>
+        `);
+      });
+
+      els.teamsContainer.innerHTML = parts.join("");
+      teamList.forEach(setupTeamCard);
+      updateTeamVisibility();
+    }
+
+    function setupTeamCard(t){
+      const slug = t.slug;
+      t.range = "reg";
+
+      const toggleBtn = document.querySelector(`button[data-toggle-range="${slug}"]`);
+      toggleBtn.addEventListener("click", () => {
+        if(t.range === "reg"){
+          t.range = "playoffs";
+          toggleBtn.textContent = "Reg Season";
+        }else{
+          t.range = "reg";
+          toggleBtn.textContent = "Playoffs";
+        }
+        rebuildChartForTeam(t);
+      });
+
+      rebuildChartForTeam(t);
+    }
+
+    function buildTeamDropdown(){
+      const listEl = els.teamDropdownList;
+      listEl.innerHTML = "";
+
+      const allBtn = document.createElement("button");
+      allBtn.type = "button";
+      allBtn.className = "team-dd-item";
+      allBtn.dataset.team = "";
+      allBtn.textContent = "All Teams";
+      allBtn.addEventListener("click", () => {
+        selectedFilterTeam = null;
+        els.allTeamsLabel.textContent = "All Teams";
+        updateTeamVisibility();
+        els.teamDropdown.classList.remove("open");
+      });
+      listEl.appendChild(allBtn);
+
+      teamList.forEach(t => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "team-dd-item";
+        btn.dataset.team = t.team;
+        btn.textContent = t.team;
+        btn.addEventListener("click", () => {
+          selectedFilterTeam = t.team;
+          els.allTeamsLabel.textContent = t.team;
+          updateTeamVisibility();
+          els.teamDropdown.classList.remove("open");
+        });
+        listEl.appendChild(btn);
+      });
+
+      highlightDropdown();
+    }
+
+    function highlightDropdown(){
+      const items = els.teamDropdownList.querySelectorAll(".team-dd-item");
+      items.forEach(el => {
+        const team = el.dataset.team || "";
+        const isActive = (!selectedFilterTeam && team === "") ||
+                         (selectedFilterTeam && team === selectedFilterTeam);
+        el.classList.toggle("active", isActive);
+      });
+    }
+
+    function updateTeamVisibility(){
+      document.querySelectorAll(".team-block").forEach(b => {
+        const team = b.getAttribute("data-team");
+        const visible = !selectedFilterTeam || selectedFilterTeam === team;
+        b.style.display = visible ? "" : "none";
+      });
+      highlightDropdown();
+    }
+
+    function getRangeData(t){
+      const weeks = t.weeks.filter(w =>
+        t.range === "reg" ? (w.week >=1 && w.week <=14) : (w.week >=15 && w.week <=17)
+      );
+      const labels = weeks.map(w => "W"+w.week);
+      const data   = weeks.map(w => (w.eff || 0)*100);
+      const abandoned = weeks.map(w => w.outcome === "Would Have Won");
+      return {weeks,labels,data,abandoned};
+    }
+
+    function applyChartTheme(chart){
+      const c = getColorTokens();
+      chart.$colors = c;
+
+      chart.options.scales.x.grid.display = false;
+      chart.options.scales.x.grid.drawBorder = true;
+
+      chart.options.scales.y.ticks.color = c.text;
+      chart.options.scales.y.grid.color  = c.grid;
+
+      chart.options.scales.x.ticks.color = (ctx) => {
+        const chart = ctx.chart;
+        const ds = chart.data.datasets[0];
+        const weeksArr = ds.weeksInfo || [];
+        const w = weeksArr[ctx.index];
+        if(w && w.actRes === "Win") return c.success;
+        if(w && w.actRes === "Loss") return c.danger;
+        return c.text;
+      };
+
+      if(chart.options.plugins && chart.options.plugins.datalabels){
+        chart.options.plugins.datalabels.color = c.text;
+      }
+
+      const ds0 = chart.data.datasets[0];
+      ds0.borderColor = c.accent;
+      ds0.backgroundColor = c.accent;
+      ds0.pointBackgroundColor = c.accent;
+      ds0.pointBorderColor = "#ffffff";
+
+      if(chart.data.datasets[1]){
+        chart.data.datasets[1].borderColor = c.warning;
+      }
+      if(chart.data.datasets[2]){
+        chart.data.datasets[2].borderColor = "#ff009d";
+      }
+    }
+
+    function resetWeekCard(t){
+      const slug = t.slug;
+      const wrap = document.getElementById(`weekDetailWrap-${slug}`);
+      const detail = document.getElementById(`weekDetail-${slug}`);
+      if(wrap) wrap.style.display = "none";
+      if(detail) detail.innerHTML = "";
+    }
+
+    function resultClass(res){
+      if(res === "Win") return "success";
+      if(res === "Loss") return "danger";
+      return "";
+    }
+
+    function rebuildChartForTeam(t){
+      const slug = t.slug;
+      const canvas = document.getElementById(`effChart-${slug}`);
+      const {weeks,labels,data,abandoned} = getRangeData(t);
+
+      const ytdVal = (t.eff || 0)*100;
+      const leagueVal = (leagueEff || 0)*100;
+
+      const seriesValues = data.filter(v => v>0);
+      const rangeVals = seriesValues.concat(
+        isFinite(ytdVal)?[ytdVal]:[],
+        isFinite(leagueVal)?[leagueVal]:[]
+      );
+
+      let minY = 70, maxY = 100;
+      if(rangeVals.length){
+        const min = Math.min.apply(null, rangeVals);
+        const max = Math.max.apply(null, rangeVals);
+
+        const padBottom = 5;
+        const padTop = 4;
+        minY = Math.max(50, Math.floor(min) - padBottom);
+        maxY = Math.min(102, Math.ceil(max) + padTop);
+
+        if(maxY - minY < 15){
+          const extra = (15 - (maxY-minY))/2;
+          minY = Math.max(50, Math.floor(minY-extra));
+          maxY = Math.min(102, Math.ceil(maxY+extra));
+        }
+      }
+
+      if(t.chart){
+        const chart = t.chart;
+        const ds0 = chart.data.datasets[0];
+        const ds1 = chart.data.datasets[1];
+        const ds2 = chart.data.datasets[2];
+
+        chart.data.labels = labels;
+        ds0.data = data;
+        ds0.abandoned = abandoned;
+        ds0.weeksInfo = weeks;
+
+        ds1.data = labels.map(() => ytdVal);
+        ds2.data = labels.map(() => leagueVal);
+
+        chart.options.scales.y.min = minY;
+        chart.options.scales.y.max = maxY;
+
+        applyChartTheme(chart);
+        chart.update();
+        resetWeekCard(t);
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+
+      const chart = new Chart(ctx,{
+        type:"line",
+        data:{
+          labels,
+          datasets:[
+            {
+              label:"Efficiency %",
+              data,
+              tension:0.35,
+              fill:false,
+              abandoned,
+              weeksInfo:weeks,
+              pointRadius:4,
+              pointHoverRadius:6,
+              pointHitRadius:14,
+              pointBorderWidth:1.5,
+              pointStyle:"circle"
+            },
+            {
+              label:"Team Avg",
+              data: labels.map(() => ytdVal),
+              tension:0,
+              borderDash:[4,4],
+              borderWidth:1,
+              pointRadius:0,
+              pointHitRadius:0
+            },
+            {
+              label:"League Avg",
+              data: labels.map(() => leagueVal),
+              borderColor:"#ff009d",
+              tension:0,
+              borderDash:[2,3],
+              borderWidth:1,
+              pointRadius:0,
+              pointHitRadius:0
+            }
+          ]
+        },
+        options:{
+          responsive:true,
+          maintainAspectRatio:false,
+          layout:{
+            padding:{top:8,bottom:2,left:0,right:0}
+          },
+          plugins:{
+            legend:{display:false},
+            tooltip:{enabled:false},
+            datalabels:{
+              display:(ctx) => ctx.datasetIndex === 0,
+              clamp:true,
+              clip:false,
+              anchor:"end",
+              align:(ctx) => {
+                const arr = ctx.dataset.data || [];
+                const i = ctx.dataIndex;
+                const v = arr[i];
+                const prev = i>0 ? arr[i-1] : v;
+                const next = i<arr.length-1 ? arr[i+1] : v;
+                const avg = (prev + next) / 2;
+                return v >= avg ? "top" : "bottom";
+              },
+              formatter:(v) => `${Math.round(v)}%`,
+              font:{size:9,weight:"600"},
+              padding:2
+            }
+          },
+          scales:{
+            x:{
+              title:{display:false},
+              grid:{display:false},
+              ticks:{
+                display:true,
+                font:{size:10}
+              },
+              offset:false,
+              clip:false
+            },
+            y:{
+              min:minY,
+              max:maxY,
+              ticks:{
+                callback:(v) => {
+                  const r = Math.round(v);
+                  if(r>100) return "";
+                  return `${r}%`;
+                }
+              }
+            }
+          },
+          onClick:(evt,elements)=>{
+            const weeksArr = weeks;
+            let index = null;
+
+            if(elements.length){
+              index = elements[0].index;
+            }else{
+              const rect = chart.canvas.getBoundingClientRect();
+              const xPixel = evt.clientX - rect.left;
+              const xScale = chart.scales.x;
+              let closest = null;
+              let minDist = Infinity;
+              weeksArr.forEach((_,i)=>{
+                const px = xScale.getPixelForTick(i);
+                const d = Math.abs(px - xPixel);
+                if(d < minDist){
+                  minDist = d;
+                  closest = i;
+                }
+              });
+              if(minDist <= 18) index = closest;
+            }
+
+            if(index == null || index < 0 || index >= weeksArr.length) return;
+            const wk = weeksArr[index];
+            if(!wk) return;
+            setSelectedWeek(t, wk);
+          }
+        }
+      });
+
+      t.chart = chart;
+      applyChartTheme(chart);
+      chart.update();
+    }
+
+    function setSelectedWeek(t,wk){
+      const slug = t.slug;
+      const wrap = document.getElementById(`weekDetailWrap-${slug}`);
+      const detail = document.getElementById(`weekDetail-${slug}`);
+      if(!wrap || !detail) return;
+
+      const effPct = (wk.eff || 0)*100;
+      const effStr = `${Math.round(effPct)}%`;
+
+      let benchHtml = "";
+      if(wk.bench){
+        const parts = wk.bench.split(/\s*,\s*/).filter(Boolean);
+        benchHtml = parts.map(p => `<div>${p}</div>`).join("");
+      }else{
+        benchHtml = "<span class='wk-stat-label'>No upgrade opportunities logged.</span>";
+      }
+
+      const cardHtml = `
+        <div class="wk-label">Week ${wk.week}</div>
+        <div class="wk-title-row">
+          <div>
+            <div class="wk-team">${t.team}</div>
+          </div>
+          <div class="wk-eff-pill">
+            <span class="wk-stat-label">Efficiency</span>
+            <strong>${effStr}</strong>
+          </div>
+        </div>
+
+        <div class="wk-stat-grid">
+          <div class="wk-stat-box">
+            <div class="wk-stat-label">Projected Pts</div>
+            <div class="wk-stat-val">${wk.proj.toFixed(2)}</div>
+          </div>
+          <div class="wk-stat-box">
+            <div class="wk-stat-label">Actual Pts</div>
+            <div class="wk-stat-val">${wk.actual.toFixed(2)}</div>
+          </div>
+          <div class="wk-stat-box">
+            <div class="wk-stat-label">Optimal Pts</div>
+            <div class="wk-stat-val">${wk.optimal.toFixed(2)}</div>
+          </div>
+          <div class="wk-stat-box">
+            <div class="wk-stat-label">Benched Pts</div>
+            <div class="wk-stat-val">${wk.wasted.toFixed(2)}</div>
+          </div>
+        </div>
+
+        <div class="wk-bench">
+          <div class="wk-bench-title">Optimal Starts</div>
+          <div class="wk-bench-body">
+            ${benchHtml}
+          </div>
+        </div>
+
+        <div class="wk-outcomes">
+          <div class="wk-outcome-tags">
+            ${wk.actRes ? `<span class="wk-tag ${resultClass(wk.actRes)}">Actual: ${wk.actRes}</span>` : ""}
+            ${wk.optRes ? `<span class="wk-tag ${resultClass(wk.optRes)}">Optimal: ${wk.optRes}</span>` : ""}
+          </div>
+          <button class="chart-pill wk-collapse-btn" data-team="${slug}">
+            Collapse
+          </button>
+        </div>
+      `;
+
+      detail.innerHTML = cardHtml;
+      wrap.style.display = "";
+    }
+
+    // Global handler for Collapse buttons
+    document.addEventListener("click", (e) => {
+      if(e.target.classList.contains("wk-collapse-btn")){
+        const slug = e.target.dataset.team;
+        const wrap = document.getElementById(`weekDetailWrap-${slug}`);
+        if(wrap) wrap.style.display = "none";
+      }
+    });
+
+    applyInitialDarkMode();
+    loadData();
+  </script>
+</body>
+</html>
