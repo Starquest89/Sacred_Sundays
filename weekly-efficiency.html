@@ -656,8 +656,9 @@
     }
 
     /***** Box drawing for Abandoned Wins (tick labels) *****/
-    const BOX_OFFSET_Y = -9;   // distance under tick label
-    const BOX_HEIGHT   = 16;
+    const BOX_OFFSET_Y = -16;   // distance under tick label
+    const BOX_HEIGHT   = 28;
+const BOX_OFFSET_X = -5;   // negative = left, positive = right
 
     const AbandonedWinsPlugin = {
       id: "abandonedWins",
@@ -674,7 +675,7 @@
         const colors = getColorTokens();
         ctx.save();
         ctx.strokeStyle = colors.main;
-        ctx.lineWidth = 1.6;
+        ctx.lineWidth = 1.0;
 
         const paddingX = 4;
 
@@ -695,7 +696,8 @@
 
           const centerY = xAxis.bottom + BOX_OFFSET_Y;
           const top = centerY - BOX_HEIGHT / 2;
-          const left = x - rectWidth / 2;
+         const left = x - rectWidth / 2 + BOX_OFFSET_X;
+
 
           ctx.beginPath();
           if (ctx.roundRect) {
