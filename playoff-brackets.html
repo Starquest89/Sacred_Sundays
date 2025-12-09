@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Playoff Brackets by Year — Sacred Sundays</title>
+  <meta name="color-scheme" content="light dark" />
+
+  <style>
+    :root {
+      --max-width: 1100px;
+
+      /* LIGHT THEME */
+      --bg: #e4f3ea;
+      --bg-radial-top: #ecfdf3;
+      --bg-radial-bottom: #dcfce7;
+      --card-bg: #ffffff;
+      --card-border: #e5e7eb;
+      --text-main: #0f172a;
+      --text-subtle: #6b7280;
+      --accent: #22c55e;
+      --accent-soft: rgba(34, 197, 94, 0.12);
+      --accent-strong: #16a34a;
+      --pill-bg: #f3f4f6;
+      --pill-bg-active: #22c55e;
+      --pill-text-active: #022c22;
+      --badge-bg: #f97316;
+      --badge-text: #fff;
+      --winner-bg: rgba(34, 197, 94, 0.08);
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.18);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #020617;
+        --bg-radial-top: #0b1120;
+        --bg-radial-bottom: #020617;
+        --card-bg: #020617;
+        --card-border: #1f2937;
+        --text-main: #e5e7eb;
+        --text-subtle: #9ca3af;
+        --accent-soft: rgba(34, 197, 94, 0.15);
+        --pill-bg: #020617;
+        --pill-bg-active: #22c55e;
+        --pill-text-active: #022c22;
+        --winner-bg: rgba(34, 197, 94, 0.2);
+        --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.75);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(circle at 0% 0%, var(--bg-radial-top), transparent 55%),
+        radial-gradient(circle at 120% 0%, var(--bg-radial-bottom), transparent 55%),
+        var(--bg);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 16px 48px;
+    }
+
+    .page-shell {
+      width: 100%;
+      max-width: var(--max-width);
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(34,197,94,0.09), transparent 60%),
+                  radial-gradient(circle at bottom right, rgba(37,99,235,0.06), transparent 55%),
+                  var(--card-bg);
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      padding: 24px 20px 20px;
+    }
+
+    @media (min-width: 768px) {
+      .card {
+        padding: 28px 28px 26px;
+        border-radius: 28px;
+      }
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    @media (min-width: 640px) {
+      .header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+      }
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title {
+      font-size: 1.45rem;
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      font-weight: 700;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #f97316, #facc15);
+      color: var(--badge-text);
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 10px 25px rgba(248, 113, 22, 0.4);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.9);
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-subtle);
+      max-width: 420px;
+    }
+
+    .year-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .year-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+    }
+
+    .year-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .year-pill {
+      border-radius: 999px;
+      padding: 5px 12px;
+      border: 1px solid transparent;
+      background: var(--pill-bg);
+      color: var(--text-subtle);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .year-pill span {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .year-pill:hover {
+      border-color: rgba(148, 163, 184, 0.8);
+      transform: translateY(-1px);
+    }
+
+    .year-pill.active {
+      background: var(--pill-bg-active);
+      color: var(--pill-text-active);
+      border-color: transparent;
+      box-shadow: 0 12px 24px rgba(34, 197, 94, 0.4);
+      font-weight: 600;
+    }
+
+    .defending-chip {
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(24, 24, 27, 0.5);
+      color: rgba(248, 250, 252, 0.96);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .year-select {
+      display: none;
+      width: 100%;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.02);
+      color: var(--text-main);
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 480px) {
+      .year-pills {
+        display: none;
+      }
+      .year-select {
+        display: block;
+      }
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+    }
+
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.03);
+      border: 1px dashed rgba(148, 163, 184, 0.6);
+    }
+
+    .meta-pill strong {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .divider {
+      height: 1px;
+      width: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(148, 163, 184, 0.7),
+        transparent
+      );
+      margin: 8px 0 18px;
+    }
+
+    /* BRACKET LAYOUT */
+
+    .bracket-shell {
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin: 0 -4px;
+    }
+
+    .bracket {
+      min-width: 640px;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(180px, 1fr);
+      gap: 16px;
+    }
+
+    @media (min-width: 900px) {
+      .bracket {
+        min-width: 100%;
+      }
+    }
+
+    .round-column {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .round-header {
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      margin-bottom: 4px;
+    }
+
+    .matchup {
+      background: radial-gradient(circle at top, var(--accent-soft), transparent 70%),
+                  rgba(15, 23, 42, 0.02);
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .matchup-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-subtle);
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .matchup-label span:last-child {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .seed-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 6px;
+      align-items: center;
+      padding: 5px 6px;
+      border-radius: 999px;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+
+    .seed-row:first-of-type {
+      margin-bottom: 2px;
+    }
+
+    .seed-row.winner {
+      background: var(--winner-bg);
+      border: 1px solid rgba(34, 197, 94, 0.7);
+      box-shadow: 0 7px 16px rgba(22, 163, 74, 0.35);
+      transform: translateY(-0.5px);
+    }
+
+    .seed {
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-subtle);
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.02);
+    }
+
+    .team-name {
+      font-size: 0.78rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .team-name strong {
+      font-weight: 600;
+    }
+
+    .score {
+      font-size: 0.8rem;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+
+    .score.winner {
+      font-weight: 700;
+      color: var(--accent-strong);
+    }
+
+    .bye-label {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      font-style: italic;
+      margin-left: 4px;
+    }
+
+    .champ-banner {
+      margin-top: 12px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      background: radial-gradient(circle at left, rgba(34, 197, 94, 0.28), transparent 60%),
+                  radial-gradient(circle at right, rgba(59, 130, 246, 0.22), transparent 60%),
+                  #020617;
+      color: #e5e7eb;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 12px;
+      justify-content: space-between;
+    }
+
+    .champ-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .champ-crown {
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #fde047, #f97316);
+      box-shadow: 0 10px 24px rgba(252, 211, 77, 0.6);
+      font-size: 1rem;
+    }
+
+    .champ-main strong {
+      font-weight: 700;
+    }
+
+    .champ-meta {
+      font-size: 0.75rem;
+      opacity: 0.9;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .champ-meta span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip-mini {
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .empty-state {
+      padding: 18px 16px;
+      border-radius: 18px;
+      border: 1px dashed rgba(148, 163, 184, 0.8);
+      background: rgba(15, 23, 42, 0.02);
+      font-size: 0.85rem;
+      color: var(--text-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .empty-state strong {
+      color: var(--text-main);
+    }
+
+    .hint {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <section class="card">
+      <header class="header">
+        <div class="title-block">
+          <div class="title-row">
+            <h1 class="title">Playoff Brackets</h1>
+            <span class="badge">
+              <span class="badge-dot"></span>
+              Sacred Sundays
+            </span>
+          </div>
+          <p class="subtitle">
+            Scroll through the years to see who survived the gauntlet, who
+            choked as the 1-seed, and who snuck in and ran the table.
+          </p>
+        </div>
+
+        <div class="year-controls">
+          <span class="year-label">Season</span>
+          <div id="yearPills" class="year-pills"></div>
+          <select id="yearSelect" class="year-select"></select>
+        </div>
+      </header>
+
+      <div id="metaRow" class="meta-row" aria-live="polite"></div>
+      <div class="divider"></div>
+
+      <div id="bracketRegion" class="bracket-shell" aria-live="polite">
+        <!-- JS will render bracket here -->
+      </div>
+
+      <p class="hint">
+        Pro tip: on mobile, you can swipe the bracket side-to-side to see every round.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    // ---------------------------
+    // PLAYOFF DATA MODEL
+    // ---------------------------
+    // You can edit everything in BRACKETS to match real Sacred Sundays history.
+    //
+    // Schema:
+    //   BRACKETS[year] = {
+    //     champion: { team, owner, seed, record, pointsFor },
+    //     notes: "optional string",
+    //     teamsInPlayoffs: 6 or 8 etc,
+    //     rounds: [
+    //       {
+    //         name: "Quarterfinals",
+    //         matchups: [
+    //           {
+    //             id: "QF1",
+    //             label: "QF #1",
+    //             top: {
+    //               seed: 3,
+    //               team: "Whistling Bungholes",
+    //               owner: "Owner Name",
+    //               score: 121.4,
+    //               isWinner: true,
+    //               isBye: false
+    //             },
+    //             bottom: { ...same keys... }
+    //           }
+    //         ]
+    //       },
+    //       ...
+    //     ]
+    //   }
+
+    const BRACKETS = {
+      2024: {
+        champion: {
+          team: "Whistling Bungholes",
+          owner: "Alex Krall",
+          seed: 2,
+          record: "10-4",
+          pointsFor: 1724.8
+        },
+        notes: "2-seed runs the table, knocking off the #1 seed in the final.",
+        teamsInPlayoffs: 6,
+        rounds: [
+          {
+            name: "Wildcard",
+            matchups: [
+              {
+                id: "WC1",
+                label: "Wildcard #1",
+                top: {
+                  seed: 3,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 118.3,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 6,
+                  team: "Football Furies",
+                  owner: "Owner B",
+                  score: 97.6,
+                  isWinner: false,
+                  isBye: false
+                }
+              },
+              {
+                id: "WC2",
+                label: "Wildcard #2",
+                top: {
+                  seed: 4,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 103.9,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 5,
+                  team: "Dumpster Fire",
+                  owner: "Owner D",
+                  score: 111.2,
+                  isWinner: true,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Semifinals",
+            matchups: [
+              {
+                id: "SF1",
+                label: "Semi #1",
+                top: {
+                  seed: 1,
+                  team: "Gridiron Gandalf",
+                  owner: "Owner E",
+                  score: 121.1,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 4,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 135.4,
+                  isWinner: true,
+                  isBye: false
+                }
+              },
+              {
+                id: "SF2",
+                label: "Semi #2",
+                top: {
+                  seed: 2,
+                  team: "Whistling Bungholes",
+                  owner: "Alex Krall",
+                  score: 142.7,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 3,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 109.3,
+                  isWinner: false,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Championship",
+            matchups: [
+              {
+                id: "CHAMP",
+                label: "Final",
+                top: {
+                  seed: 2,
+                  team: "Whistling Bungholes",
+                  owner: "Alex Krall",
+                  score: 151.9,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 4,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 128.1,
+                  isWinner: false,
+                  isBye: false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      2023: {
+        champion: {
+          team: "Delco Dingleberries",
+          owner: "Owner A",
+          seed: 5,
+          record: "8-6",
+          pointsFor: 1582.1
+        },
+        notes: "5-seed Cinderella run. Upsets the 1-, 2- and 3-seeds in back-to-back weeks.",
+        teamsInPlayoffs: 6,
+        rounds: [
+          {
+            name: "Wildcard",
+            matchups: [
+              {
+                id: "2023WC1",
+                label: "Wildcard #1",
+                top: {
+                  seed: 3,
+                  team: "Whistling Bungholes",
+                  owner: "Alex Krall",
+                  score: 101.3,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 6,
+                  team: "Dumpster Fire",
+                  owner: "Owner D",
+                  score: 112.7,
+                  isWinner: true,
+                  isBye: false
+                }
+              },
+              {
+                id: "2023WC2",
+                label: "Wildcard #2",
+                top: {
+                  seed: 4,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 119.4,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 5,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 132.6,
+                  isWinner: true,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Semifinals",
+            matchups: [
+              {
+                id: "2023SF1",
+                label: "Semi #1",
+                top: {
+                  seed: 1,
+                  team: "Gridiron Gandalf",
+                  owner: "Owner E",
+                  score: 98.7,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 5,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 122.8,
+                  isWinner: true,
+                  isBye: false
+                }
+              },
+              {
+                id: "2023SF2",
+                label: "Semi #2",
+                top: {
+                  seed: 2,
+                  team: "Football Furies",
+                  owner: "Owner B",
+                  score: 115.9,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 6,
+                  team: "Dumpster Fire",
+                  owner: "Owner D",
+                  score: 124.0,
+                  isWinner: true,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Championship",
+            matchups: [
+              {
+                id: "2023CHAMP",
+                label: "Final",
+                top: {
+                  seed: 5,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 137.5,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 6,
+                  team: "Dumpster Fire",
+                  owner: "Owner D",
+                  score: 114.2,
+                  isWinner: false,
+                  isBye: false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      2022: {
+        champion: {
+          team: "Football Furies",
+          owner: "Owner B",
+          seed: 1,
+          record: "11-3",
+          pointsFor: 1769.3
+        },
+        notes: "Top seed goes wire-to-wire and closes it out in a low-scoring rock fight.",
+        teamsInPlayoffs: 6,
+        rounds: [
+          {
+            name: "Wildcard",
+            matchups: [
+              {
+                id: "2022WC1",
+                label: "Wildcard #1",
+                top: {
+                  seed: 3,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 107.4,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 6,
+                  team: "Dumpster Fire",
+                  owner: "Owner D",
+                  score: 84.9,
+                  isWinner: false,
+                  isBye: false
+                }
+              },
+              {
+                id: "2022WC2",
+                label: "Wildcard #2",
+                top: {
+                  seed: 4,
+                  team: "Whistling Bungholes",
+                  owner: "Alex Krall",
+                  score: 99.8,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 5,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 108.7,
+                  isWinner: true,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Semifinals",
+            matchups: [
+              {
+                id: "2022SF1",
+                label: "Semi #1",
+                top: {
+                  seed: 1,
+                  team: "Football Furies",
+                  owner: "Owner B",
+                  score: 113.2,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 5,
+                  team: "Delco Dingleberries",
+                  owner: "Owner A",
+                  score: 92.1,
+                  isWinner: false,
+                  isBye: false
+                }
+              },
+              {
+                id: "2022SF2",
+                label: "Semi #2",
+                top: {
+                  seed: 2,
+                  team: "Gridiron Gandalf",
+                  owner: "Owner E",
+                  score: 96.5,
+                  isWinner: false,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 3,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 104.4,
+                  isWinner: true,
+                  isBye: false
+                }
+              }
+            ]
+          },
+          {
+            name: "Championship",
+            matchups: [
+              {
+                id: "2022CHAMP",
+                label: "Final",
+                top: {
+                  seed: 1,
+                  team: "Football Furies",
+                  owner: "Owner B",
+                  score: 102.9,
+                  isWinner: true,
+                  isBye: false
+                },
+                bottom: {
+                  seed: 3,
+                  team: "Fat Tire",
+                  owner: "Owner C",
+                  score: 97.3,
+                  isWinner: false,
+                  isBye: false
+                }
+              }
+            ]
+          }
+        ]
+      }
+    };
+
+    // ---------------------------
+    // RENDERING LOGIC
+    // ---------------------------
+
+    const yearPillsEl = document.getElementById("yearPills");
+    const yearSelectEl = document.getElementById("yearSelect");
+    const metaRowEl = document.getElementById("metaRow");
+    const bracketRegionEl = document.getElementById("bracketRegion");
+
+    const years = Object.keys(BRACKETS)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    let currentYear = years[0] || null;
+
+    function initYearControls() {
+      // Pills
+      years.forEach((year, index) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "year-pill";
+        btn.dataset.year = year;
+
+        const span = document.createElement("span");
+        span.textContent = year;
+
+        btn.appendChild(span);
+
+        // small chip on latest champion
+        if (index === 0) {
+          const defending = document.createElement("span");
+          defending.className = "defending-chip";
+          defending.textContent = "Defending Champ";
+          btn.appendChild(defending);
+        }
+
+        btn.addEventListener("click", () => {
+          setCurrentYear(year);
+          yearSelectEl.value = String(year);
+        });
+
+        yearPillsEl.appendChild(btn);
+      });
+
+      // Select (mobile)
+      years.forEach((year) => {
+        const opt = document.createElement("option");
+        opt.value = year;
+        opt.textContent = year;
+        yearSelectEl.appendChild(opt);
+      });
+
+      yearSelectEl.addEventListener("change", (e) => {
+        const year = Number(e.target.value);
+        setCurrentYear(year);
+        syncPills(year);
+      });
+
+      if (currentYear != null) {
+        yearSelectEl.value = String(currentYear);
+      }
+
+      syncPills(currentYear);
+    }
+
+    function syncPills(activeYear) {
+      const pills = document.querySelectorAll(".year-pill");
+      pills.forEach((pill) => {
+        const year = Number(pill.dataset.year);
+        pill.classList.toggle("active", year === activeYear);
+      });
+    }
+
+    function setCurrentYear(year) {
+      currentYear = year;
+      syncPills(year);
+      renderBracket();
+    }
+
+    function renderBracket() {
+      const data = BRACKETS[currentYear];
+      metaRowEl.innerHTML = "";
+      bracketRegionEl.innerHTML = "";
+
+      if (!data) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.innerHTML = `
+          <strong>No playoff data yet for ${currentYear}.</strong>
+          <span>Add a <code>${currentYear}</code> entry to the <code>BRACKETS</code> object in the script to display this bracket.</span>
+        `;
+        bracketRegionEl.appendChild(empty);
+        return;
+      }
+
+      // Meta row (season overview)
+      const champ = data.champion || {};
+      const metaPieces = [];
+
+      if (champ.team) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>Champion:</strong> ${champ.team}${
+            champ.owner ? ` (${champ.owner})` : ""
+          }</span>`
+        );
+      }
+
+      if (champ.seed != null) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>Seed:</strong> #${champ.seed}</span>`
+        );
+      }
+
+      if (champ.record) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>Record:</strong> ${champ.record}</span>`
+        );
+      }
+
+      if (champ.pointsFor != null) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>PF:</strong> ${champ.pointsFor.toFixed(
+            1
+          )}</span>`
+        );
+      }
+
+      if (data.teamsInPlayoffs) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>Bracket Size:</strong> ${data.teamsInPlayoffs} teams</span>`
+        );
+      }
+
+      if (data.notes) {
+        metaPieces.push(
+          `<span class="meta-pill"><strong>Storyline:</strong> ${data.notes}</span>`
+        );
+      }
+
+      metaRowEl.innerHTML = metaPieces.join("");
+
+      // Bracket grid
+      if (!data.rounds || !data.rounds.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.innerHTML = `
+          <strong>Bracket data missing rounds.</strong>
+          <span>Make sure <code>rounds</code> is an array with at least one round containing matchups.</span>
+        `;
+        bracketRegionEl.appendChild(empty);
+        return;
+      }
+
+      const bracket = document.createElement("div");
+      bracket.className = "bracket";
+
+      data.rounds.forEach((round) => {
+        const col = document.createElement("div");
+        col.className = "round-column";
+
+        const header = document.createElement("div");
+        header.className = "round-header";
+        header.textContent = round.name || "Round";
+        col.appendChild(header);
+
+        if (!round.matchups || !round.matchups.length) {
+          const placeholder = document.createElement("div");
+          placeholder.className = "empty-state";
+          placeholder.innerHTML = `<strong>No matchups recorded for this round.</strong>`;
+          col.appendChild(placeholder);
+        } else {
+          round.matchups.forEach((m) => {
+            const matchupEl = document.createElement("article");
+            matchupEl.className = "matchup";
+
+            const labelEl = document.createElement("div");
+            labelEl.className = "matchup-label";
+            labelEl.innerHTML = `
+              <span>${m.label || ""}</span>
+              <span>${m.id || ""}</span>
+            `;
+            matchupEl.appendChild(labelEl);
+
+            const top = m.top || {};
+            const bottom = m.bottom || {};
+
+            // Helper to render a row
+            function createSeedRow(entry) {
+              const row = document.createElement("div");
+              row.className = "seed-row";
+
+              if (entry.isWinner) row.classList.add("winner");
+
+              const seed = document.createElement("span");
+              seed.className = "seed";
+              seed.textContent =
+                entry.isBye ? "BYE" : (entry.seed != null ? `#${entry.seed}` : "");
+
+              const team = document.createElement("div");
+              team.className = "team-name";
+
+              if (entry.isBye) {
+                team.innerHTML = `<em>Bye week</em>`;
+              } else if (!entry.team) {
+                team.innerHTML = `<em>TBD</em>`;
+              } else {
+                const ownerText = entry.owner ? ` — ${entry.owner}` : "";
+                team.innerHTML = `<strong>${entry.team}</strong>${ownerText}`;
+              }
+
+              const score = document.createElement("div");
+              score.className = "score";
+              if (entry.score != null && !isNaN(entry.score)) {
+                score.textContent = entry.score.toFixed(1);
+              } else if (entry.isBye) {
+                score.textContent = "";
+              } else {
+                score.textContent = "—";
+              }
+              if (entry.isWinner) score.classList.add("winner");
+
+              row.appendChild(seed);
+              row.appendChild(team);
+              row.appendChild(score);
+              return row;
+            }
+
+            matchupEl.appendChild(createSeedRow(top));
+            matchupEl.appendChild(createSeedRow(bottom));
+
+            col.appendChild(matchupEl);
+          });
+        }
+
+        bracket.appendChild(col);
+      });
+
+      bracketRegionEl.appendChild(bracket);
+
+      // Champion banner
+      if (champ && champ.team) {
+        const banner = document.createElement("div");
+        banner.className = "champ-banner";
+
+        banner.innerHTML = `
+          <div class="champ-main">
+            <div class="champ-crown">👑</div>
+            <div>
+              <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.16em;opacity:0.9;">
+                ${currentYear} Champion
+              </div>
+              <div>
+                <strong>${champ.team}</strong>${
+                  champ.owner ? ` <span style="opacity:0.9;">(${champ.owner})</span>` : ""
+                }
+              </div>
+            </div>
+          </div>
+          <div class="champ-meta">
+            ${
+              champ.seed != null
+                ? `<span><span class="chip-mini">Seed</span> #${champ.seed}</span>`
+                : ""
+            }
+            ${
+              champ.record
+                ? `<span><span class="chip-mini">Record</span> ${champ.record}</span>`
+                : ""
+            }
+            ${
+              champ.pointsFor != null
+                ? `<span><span class="chip-mini">PF</span> ${champ.pointsFor.toFixed(
+                    1
+                  )}</span>`
+                : ""
+            }
+            ${
+              BRACKETS[currentYear].notes
+                ? `<span><span class="chip-mini">Story</span> ${
+                    BRACKETS[currentYear].notes
+                  }</span>`
+                : ""
+            }
+          </div>
+        `;
+
+        bracketRegionEl.appendChild(banner);
+      }
+    }
+
+    // ---------------------------
+    // INIT
+    // ---------------------------
+    if (years.length) {
+      initYearControls();
+      renderBracket();
+    } else {
+      bracketRegionEl.innerHTML = `
+        <div class="empty-state">
+          <strong>No playoff brackets configured yet.</strong>
+          <span>Add one or more seasons to the <code>BRACKETS</code> object in the script.</span>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
